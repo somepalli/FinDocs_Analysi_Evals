@@ -1,0 +1,14 @@
+{
+  "naive": {
+    "q-revenue": {"answer": "INR 1,240 crore", "citations": [{"document_id": "digital-fixture", "page_number": 1}]},
+    "q-ebitda": {"answer": "142", "citations": [{"document_id": "digital-fixture", "page_number": 1}]}
+  },
+  "hybrid": {
+    "q-revenue": {"answer": "1240", "citations": [{"document_id": "digital-fixture", "page_number": 1}]},
+    "q-ebitda": {"answer": "186", "citations": [{"document_id": "digital-fixture", "page_number": 1}]}
+  },
+  "hybrid_rerank": {
+    "q-revenue": {"answer": "1240", "citations": [{"document_id": "digital-fixture", "page_number": 1}]},
+    "q-ebitda": {"answer": "186", "citations": [{"document_id": "digital-fixture", "page_number": 1}]}
+  }
+}

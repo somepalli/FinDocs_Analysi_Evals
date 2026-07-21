@@ -11,7 +11,7 @@ harness lands.
 |---|---|---|
 | 1. Ingestion | Complete | 15 filings, 1,236 chunks, 5 visual bbox checks |
 | 2. Retrieval | Implemented | Dense, hybrid RRF, and hybrid RRF + BGE rerank |
-| 3. Evaluation | Not started | Separate retrieval and answer score tables |
+| 3. Evaluation | Implemented | Separate retrieval and answer score tables |
 | 4. Two-pass reasoning | Not started | Single-pass versus two-pass results |
 | 5. Observability | Not started | Per-query latency and hit-rate |
 | 6. Cross-lingual | Not started | Results split by query language |
@@ -52,6 +52,21 @@ BGE-M3 search, `hybrid` uses Qdrant's dense+sparse reciprocal-rank fusion, and
 `BAAI/bge-reranker-v2-m3`. Retrieval hits retain the original chunk and its
 page-level provenance; answer generation is deliberately not part of this
 phase.
+
+## Phase 3 evaluation
+
+The evaluation contract lives in [evals/EVAL_SCHEMA.md](evals/EVAL_SCHEMA.md).
+Run the deterministic smoke sweep with:
+
+```powershell
+$env:PYTHONPATH = "src;."
+python -m evals.run --sweep --answer-predictions evals/datasets/smoke_answers.json
+```
+
+It writes separate retrieval and answer tables to `evals/results/`. Add
+`--live` to sweep local Qdrant/BGE results instead of the explicitly labeled
+fixture records. Retrieval metrics are never blended with answer or citation
+metrics.
 
 ## Provenance contract
 

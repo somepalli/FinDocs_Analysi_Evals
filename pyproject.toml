@@ -29,9 +29,10 @@ dev = [
 [project.scripts]
 findociq-ingest = "findociq.ingest.cli:main"
 findociq-retrieval = "findociq.retrieve.cli:main"
+findociq-evals = "evals.run:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/findociq"]
+packages = ["src/findociq", "evals"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

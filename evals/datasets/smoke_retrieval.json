@@ -1,0 +1,14 @@
+{
+  "naive": {
+    "q-revenue": [{"chunk_id": "chunk-revenue", "rank": 1, "score": 0.9}],
+    "q-ebitda": [{"chunk_id": "chunk-other", "rank": 1, "score": 0.8}, {"chunk_id": "chunk-ebitda", "rank": 2, "score": 0.7}]
+  },
+  "hybrid": {
+    "q-revenue": [{"chunk_id": "chunk-revenue", "rank": 1, "score": 0.95}],
+    "q-ebitda": [{"chunk_id": "chunk-ebitda", "rank": 1, "score": 0.92}]
+  },
+  "hybrid_rerank": {
+    "q-revenue": [{"chunk_id": "chunk-revenue", "rank": 1, "score": 0.96}],
+    "q-ebitda": [{"chunk_id": "chunk-ebitda", "rank": 1, "score": 0.94}]
+  }
+}

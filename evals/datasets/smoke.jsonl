@@ -1,0 +1,2 @@
+{"question_id":"q-revenue","question":"What was revenue in FY25?","language":"en","relevant_chunk_ids":["chunk-revenue"],"expected_answer":{"answer_type":"numeric","value":"1240","tolerance":0.0},"expected_citations":[{"document_id":"digital-fixture","page_number":1}]}
+{"question_id":"q-ebitda","question":"What was EBITDA in FY25?","language":"en","relevant_chunk_ids":["chunk-ebitda"],"expected_answer":{"answer_type":"numeric","value":"186","tolerance":0.0},"expected_citations":[{"document_id":"digital-fixture","page_number":1}]}
