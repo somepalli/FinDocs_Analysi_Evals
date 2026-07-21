@@ -17,6 +17,10 @@ dependencies = [
 
 [project.optional-dependencies]
 docling = ["docling==2.62.0"]
+retrieval = [
+  "FlagEmbedding==1.4.0",
+  "qdrant-client==1.18.0",
+]
 dev = [
   "pytest==8.3.4",
   "ruff==0.9.10",
@@ -24,6 +28,7 @@ dev = [
 
 [project.scripts]
 findociq-ingest = "findociq.ingest.cli:main"
+findociq-retrieval = "findociq.retrieve.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/findociq"]

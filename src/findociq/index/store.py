@@ -1,0 +1,171 @@
+"""Qdrant named-vector storage for BGE-M3 dense and sparse embeddings."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Any, Protocol
+from uuid import NAMESPACE_URL, uuid5
+
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+
+from findociq.index.embedder import Embedding
+from findociq.ingest.schema import Chunk, TableChunk, TextChunk
+from findociq.retrieve.schema import RetrievalHit
+
+CHUNK_ADAPTER = TypeAdapter(Chunk)
+
+
+@dataclass(frozen=True, slots=True)
+class QdrantStoreConfig:
+    url: str = "http://localhost:6333"
+    collection: str = "findociq_chunks"
+    dense_vector_name: str = "dense"
+    sparse_vector_name: str = "sparse"
+    timeout_seconds: int = 60
+
+    def __post_init__(self) -> None:
+        if not self.url or not self.collection:
+            raise ValueError("Qdrant url and collection are required")
+        if self.timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be positive")
+
+
+class IndexRecord(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    chunk: TextChunk | TableChunk = Field(discriminator="kind")
+    embedding: Embedding
+
+
+class RetrievalStore(Protocol):
+    def ensure_collection(self, dense_dimension: int) -> None: ...
+
+    def upsert(self, records: Sequence[IndexRecord]) -> None: ...
+
+    def dense_search(self, query: Embedding, limit: int) -> tuple[RetrievalHit, ...]: ...
+
+    def hybrid_search(
+        self,
+        query: Embedding,
+        limit: int,
+        prefetch_limit: int,
+        rrf_k: int,
+    ) -> tuple[RetrievalHit, ...]: ...
+
+
+class QdrantStore:
+    def __init__(self, config: QdrantStoreConfig, client: Any | None = None) -> None:
+        self.config = config
+        self._client = client
+
+    def ensure_collection(self, dense_dimension: int) -> None:
+        client, models = self._dependencies()
+        if client.collection_exists(self.config.collection):
+            return
+        client.create_collection(
+            collection_name=self.config.collection,
+            vectors_config={
+                self.config.dense_vector_name: models.VectorParams(
+                    size=dense_dimension,
+                    distance=models.Distance.COSINE,
+                )
+            },
+            sparse_vectors_config={
+                self.config.sparse_vector_name: models.SparseVectorParams(
+                    index=models.SparseIndexParams(on_disk=False)
+                )
+            },
+        )
+
+    def upsert(self, records: Sequence[IndexRecord]) -> None:
+        if not records:
+            return
+        client, models = self._dependencies()
+        points = [
+            models.PointStruct(
+                id=str(uuid5(NAMESPACE_URL, record.chunk.chunk_id)),
+                vector={
+                    self.config.dense_vector_name: list(record.embedding.dense),
+                    self.config.sparse_vector_name: models.SparseVector(
+                        indices=list(record.embedding.sparse.indices),
+                        values=list(record.embedding.sparse.values),
+                    ),
+                },
+                payload={"chunk": record.chunk.model_dump(mode="json")},
+            )
+            for record in records
+        ]
+        client.upsert(collection_name=self.config.collection, points=points, wait=True)
+
+    def dense_search(self, query: Embedding, limit: int) -> tuple[RetrievalHit, ...]:
+        client, _ = self._dependencies()
+        response = client.query_points(
+            collection_name=self.config.collection,
+            query=list(query.dense),
+            using=self.config.dense_vector_name,
+            limit=limit,
+            with_payload=True,
+        )
+        return self._hits(response.points, "dense")
+
+    def hybrid_search(
+        self,
+        query: Embedding,
+        limit: int,
+        prefetch_limit: int,
+        rrf_k: int,
+    ) -> tuple[RetrievalHit, ...]:
+        client, models = self._dependencies()
+        response = client.query_points(
+            collection_name=self.config.collection,
+            prefetch=[
+                models.Prefetch(
+                    query=models.SparseVector(
+                        indices=list(query.sparse.indices),
+                        values=list(query.sparse.values),
+                    ),
+                    using=self.config.sparse_vector_name,
+                    limit=prefetch_limit,
+                ),
+                models.Prefetch(
+                    query=list(query.dense),
+                    using=self.config.dense_vector_name,
+                    limit=prefetch_limit,
+                ),
+            ],
+            query=models.RrfQuery(rrf=models.Rrf(k=rrf_k)),
+            limit=limit,
+            with_payload=True,
+        )
+        return self._hits(response.points, "hybrid_rrf")
+
+    def _dependencies(self) -> tuple[Any, Any]:
+        try:
+            from qdrant_client import QdrantClient, models
+        except ImportError as error:
+            raise RuntimeError(
+                "Qdrant dependencies are missing; run `uv sync --extra retrieval`"
+            ) from error
+        if self._client is None:
+            self._client = QdrantClient(
+                url=self.config.url,
+                timeout=self.config.timeout_seconds,
+            )
+        return self._client, models
+
+    @staticmethod
+    def _hits(points: Sequence[Any], method: str) -> tuple[RetrievalHit, ...]:
+        hits: list[RetrievalHit] = []
+        for rank, point in enumerate(points, start=1):
+            payload = point.payload or {}
+            chunk = CHUNK_ADAPTER.validate_python(payload.get("chunk"))
+            hits.append(
+                RetrievalHit(
+                    chunk=chunk,
+                    score=float(point.score),
+                    rank=rank,
+                    method=method,
+                )
+            )
+        return tuple(hits)

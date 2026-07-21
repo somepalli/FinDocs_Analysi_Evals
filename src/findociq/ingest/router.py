@@ -14,12 +14,15 @@ from findociq.ingest.schema import PageRoute
 @dataclass(frozen=True, slots=True)
 class RouterConfig:
     min_digital_characters: int = 40
+    strong_digital_characters: int = 400
     scanned_image_coverage: float = 0.70
     hybrid_image_coverage: float = 0.20
 
     def __post_init__(self) -> None:
         if self.min_digital_characters < 0:
             raise ValueError("min_digital_characters must be non-negative")
+        if self.strong_digital_characters < self.min_digital_characters:
+            raise ValueError("strong_digital_characters must be >= min_digital_characters")
         for name in ("scanned_image_coverage", "hybrid_image_coverage"):
             value = getattr(self, name)
             if not 0 <= value <= 1:
@@ -63,6 +66,12 @@ class PageRouter:
 
     def _classify(self, characters: int, image_coverage: float) -> PageRoute:
         has_text = characters >= self.config.min_digital_characters
+        # Text-native filings commonly use full-page images for stationery,
+        # watermarks, or decorative backgrounds. A substantial embedded text
+        # layer remains the more reliable signal in that case. This also keeps
+        # searchable OCR-sandwich PDFs on the coordinate-preserving fast path.
+        if characters >= self.config.strong_digital_characters:
+            return PageRoute.DIGITAL
         if not has_text and image_coverage >= self.config.scanned_image_coverage:
             return PageRoute.SCANNED
         if has_text and image_coverage >= self.config.hybrid_image_coverage:

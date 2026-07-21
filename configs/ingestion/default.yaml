@@ -1,5 +1,6 @@
 router:
   min_digital_characters: 40
+  strong_digital_characters: 400
   scanned_image_coverage: 0.70
   hybrid_image_coverage: 0.20
 parser:

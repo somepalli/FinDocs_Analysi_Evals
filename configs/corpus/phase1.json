@@ -1,0 +1,113 @@
+{
+  "name": "phase1-official-indian-filings",
+  "documents": [
+    {
+      "id": "icra-talcher-fertilizers-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?Id=136918"
+    },
+    {
+      "id": "icra-sunbeam-generators-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136124"
+    },
+    {
+      "id": "icra-shree-pushkar-chemicals-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136143"
+    },
+    {
+      "id": "icra-kids-clinic-india-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136221"
+    },
+    {
+      "id": "icra-mawana-sugars-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136344"
+    },
+    {
+      "id": "icra-kinara-capital-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136853"
+    },
+    {
+      "id": "icra-ned-energy-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136834"
+    },
+    {
+      "id": "icra-desai-brothers-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136833"
+    },
+    {
+      "id": "icra-rationale-136204-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136204"
+    },
+    {
+      "id": "icra-rationale-136513-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136513"
+    },
+    {
+      "id": "icra-rationale-136241-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136241"
+    },
+    {
+      "id": "icra-rationale-136778-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136778"
+    },
+    {
+      "id": "icra-rationale-136718-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136718"
+    },
+    {
+      "id": "icra-rationale-136091-2025",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136091"
+    },
+    {
+      "id": "icra-skh-m-india-2024",
+      "kind": "rating_rationale",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=128760"
+    },
+    {
+      "id": "sbi-card-integrated-annual-report-2025",
+      "kind": "annual_report",
+      "source": "SBI Card",
+      "url": "https://www.sbicard.com/sbi-card-en/assets/docs/pdf/who-we-are/notices/Integrated-annual-report-fy-2024-25.pdf"
+    },
+    {
+      "id": "jm-financial-annual-report-2025",
+      "kind": "annual_report",
+      "source": "JM Financial",
+      "url": "https://jmfl.com/Common/getFile/5121"
+    },
+    {
+      "id": "likhitha-infrastructure-annual-report-2025",
+      "kind": "annual_report",
+      "source": "Likhitha Infrastructure",
+      "url": "https://www.likhitha.co.in/assets/pdf/Annual_Report_2024-25.pdf"
+    }
+  ]
+}

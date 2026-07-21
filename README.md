@@ -9,8 +9,8 @@ harness lands.
 
 | Phase | Status | Gate |
 |---|---|---|
-| 1. Ingestion | In progress | Code/tests pass; 15-20 filing corpus review pending |
-| 2. Retrieval | Not started | Three strategies behind one CLI flag |
+| 1. Ingestion | Complete | 15 filings, 1,236 chunks, 5 visual bbox checks |
+| 2. Retrieval | Implemented | Dense, hybrid RRF, and hybrid RRF + BGE rerank |
 | 3. Evaluation | Not started | Separate retrieval and answer score tables |
 | 4. Two-pass reasoning | Not started | Single-pass versus two-pass results |
 | 5. Observability | Not started | Per-query latency and hit-rate |
@@ -33,6 +33,26 @@ installed and uses the PyMuPDF fast path for digital pages. Scanned or hybrid
 pages require a configured Gemma 3 vision endpoint; they are never silently
 treated as reliable text extraction.
 
+## Phase 2 retrieval
+
+Start local Qdrant with `docker compose up -d qdrant`, then install the pinned
+retrieval extras and index the JSONL chunks produced by ingestion:
+
+```powershell
+uv sync --extra retrieval
+uv run findociq-retrieval index chunks.jsonl
+uv run findociq-retrieval query "What changed in revenue?" --strategy naive
+uv run findociq-retrieval query "What changed in revenue?" --strategy hybrid
+uv run findociq-retrieval query "What changed in revenue?" --strategy hybrid_rerank
+```
+
+The strategies are assembled from `configs/retrieval/`. `naive` uses dense
+BGE-M3 search, `hybrid` uses Qdrant's dense+sparse reciprocal-rank fusion, and
+`hybrid_rerank` retrieves 50 candidates before scoring the final 8 with
+`BAAI/bge-reranker-v2-m3`. Retrieval hits retain the original chunk and its
+page-level provenance; answer generation is deliberately not part of this
+phase.
+
 ## Provenance contract
 
 Every chunk contains one or more provenance objects with a document ID,
@@ -48,8 +68,16 @@ attached to the table chunk.
 
 - The PyMuPDF fast path identifies tables through its rule-based table finder;
   borderless and visually complex tables may require Docling or vision.
-- The checked fixtures are small deterministic documents for regression tests,
-  not the 15-20 filing exit corpus. `scripts/fetch_corpus.py` will be added only
-  when redistribution-safe source URLs are selected.
+- The reproducible Phase 1 corpus uses 18 official-source PDFs. Fifteen ICRA
+  rationales were fully ingested; three annual reports correctly stop at the
+  local Gemma vision boundary. See `docs/phase1_corpus_audit.md`.
 - Vision extraction is an explicit interface in this phase. Production Gemma
   serving and its pinned revision belong to the later reasoning/serving work.
+
+## Known Phase 2 limitations
+
+- Retrieval unit tests inject deterministic model/store doubles; running the
+  real BGE-M3 and bge-reranker weights requires the pinned `retrieval` extra and
+  a local Qdrant service.
+- No retrieval benchmark is claimed yet. The separate retrieval scorers and
+  reproducible sweep belong to Phase 3.

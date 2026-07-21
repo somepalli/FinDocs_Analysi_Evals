@@ -1,0 +1,333 @@
+{
+  "corpus_lock_sha256": "916277415e9e176b3cf7b3902355ecc8eaa5d59f4e4a48c2c472e5f13169d1a5",
+  "corpus_name": "phase1-official-indian-filings",
+  "documents": [
+    {
+      "blocks": 79,
+      "chunks": 79,
+      "chunks_file": "corpus/phase1_chunks/icra-talcher-fertilizers-2025.jsonl",
+      "filename": "icra-talcher-fertilizers-2025.pdf",
+      "id": "icra-talcher-fertilizers-2025",
+      "kind": "rating_rationale",
+      "pages": 7,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 7,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "d7869492522a402a0ecb33e4d0791c1b33d1c3f2d80c3e05980041f9d74fd0cc",
+      "status": "ingested",
+      "table_chunks": 11
+    },
+    {
+      "blocks": 81,
+      "chunks": 81,
+      "chunks_file": "corpus/phase1_chunks/icra-sunbeam-generators-2025.jsonl",
+      "filename": "icra-sunbeam-generators-2025.pdf",
+      "id": "icra-sunbeam-generators-2025",
+      "kind": "rating_rationale",
+      "pages": 8,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 8,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "44dd0a40135a9925c0b49d3b974b96714930b02a9cc033877fb33232ff28f0d3",
+      "status": "ingested",
+      "table_chunks": 15
+    },
+    {
+      "blocks": 92,
+      "chunks": 93,
+      "chunks_file": "corpus/phase1_chunks/icra-shree-pushkar-chemicals-2025.jsonl",
+      "filename": "icra-shree-pushkar-chemicals-2025.pdf",
+      "id": "icra-shree-pushkar-chemicals-2025",
+      "kind": "rating_rationale",
+      "pages": 8,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 8,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "78fb20b29ec7dafc240eb1491af6beeb5f97c419de7f8a55f7dd0f0ab631e8c2",
+      "status": "ingested",
+      "table_chunks": 14
+    },
+    {
+      "blocks": 81,
+      "chunks": 81,
+      "chunks_file": "corpus/phase1_chunks/icra-kids-clinic-india-2025.jsonl",
+      "filename": "icra-kids-clinic-india-2025.pdf",
+      "id": "icra-kids-clinic-india-2025",
+      "kind": "rating_rationale",
+      "pages": 8,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 8,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "0f6d0f8bd72d42d86dd5142ce766c1caafd9b0ef9b817e2a22cca0e1f546ede3",
+      "status": "ingested",
+      "table_chunks": 14
+    },
+    {
+      "blocks": 80,
+      "chunks": 80,
+      "chunks_file": "corpus/phase1_chunks/icra-mawana-sugars-2025.jsonl",
+      "filename": "icra-mawana-sugars-2025.pdf",
+      "id": "icra-mawana-sugars-2025",
+      "kind": "rating_rationale",
+      "pages": 7,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 7,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "d5af328a73423be251138bf2b586b167bc003139a378a2ec7699916844de3c45",
+      "status": "ingested",
+      "table_chunks": 14
+    },
+    {
+      "blocks": 139,
+      "chunks": 139,
+      "chunks_file": "corpus/phase1_chunks/icra-kinara-capital-2025.jsonl",
+      "filename": "icra-kinara-capital-2025.pdf",
+      "id": "icra-kinara-capital-2025",
+      "kind": "rating_rationale",
+      "pages": 8,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 8,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "9570509e2c055919be172d24152283a13e6598abcbd559efc9c6de3c78ce1b19",
+      "status": "ingested",
+      "table_chunks": 7
+    },
+    {
+      "blocks": 58,
+      "chunks": 58,
+      "chunks_file": "corpus/phase1_chunks/icra-ned-energy-2025.jsonl",
+      "filename": "icra-ned-energy-2025.pdf",
+      "id": "icra-ned-energy-2025",
+      "kind": "rating_rationale",
+      "pages": 6,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 6,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "f8376cd193957b3803e22eb184d2515f0325fe9473b3ac6040f1dbcac06569b3",
+      "status": "ingested",
+      "table_chunks": 13
+    },
+    {
+      "blocks": 77,
+      "chunks": 77,
+      "chunks_file": "corpus/phase1_chunks/icra-desai-brothers-2025.jsonl",
+      "filename": "icra-desai-brothers-2025.pdf",
+      "id": "icra-desai-brothers-2025",
+      "kind": "rating_rationale",
+      "pages": 7,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 7,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "062c1c21bfcf3882cec5a9805bec4310a36062cca454681219195efeaff3271e",
+      "status": "ingested",
+      "table_chunks": 12
+    },
+    {
+      "blocks": 81,
+      "chunks": 81,
+      "chunks_file": "corpus/phase1_chunks/icra-rationale-136204-2025.jsonl",
+      "filename": "icra-rationale-136204-2025.pdf",
+      "id": "icra-rationale-136204-2025",
+      "kind": "rating_rationale",
+      "pages": 7,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 7,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "25e737a59366d2ed9b97b9e939c2aa78a6c83a311049e78f8d9dd00005221413",
+      "status": "ingested",
+      "table_chunks": 14
+    },
+    {
+      "blocks": 87,
+      "chunks": 87,
+      "chunks_file": "corpus/phase1_chunks/icra-rationale-136513-2025.jsonl",
+      "filename": "icra-rationale-136513-2025.pdf",
+      "id": "icra-rationale-136513-2025",
+      "kind": "rating_rationale",
+      "pages": 8,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 8,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "8b79bcfa32c75940466b6cad21c912afa530dbae7c2155f3ad289bf440617588",
+      "status": "ingested",
+      "table_chunks": 15
+    },
+    {
+      "blocks": 76,
+      "chunks": 76,
+      "chunks_file": "corpus/phase1_chunks/icra-rationale-136241-2025.jsonl",
+      "filename": "icra-rationale-136241-2025.pdf",
+      "id": "icra-rationale-136241-2025",
+      "kind": "rating_rationale",
+      "pages": 7,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 7,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "91fd1b46e2250d68fcc4a738809e9d38413185bd1dfca7ed18e4f231dd2e4081",
+      "status": "ingested",
+      "table_chunks": 12
+    },
+    {
+      "blocks": 91,
+      "chunks": 91,
+      "chunks_file": "corpus/phase1_chunks/icra-rationale-136778-2025.jsonl",
+      "filename": "icra-rationale-136778-2025.pdf",
+      "id": "icra-rationale-136778-2025",
+      "kind": "rating_rationale",
+      "pages": 9,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 9,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "b09e6ecec18f0e3e44aecfc31ac3743f4e7dbc02c4b9b9f1ad041c0dcab98d1e",
+      "status": "ingested",
+      "table_chunks": 16
+    },
+    {
+      "blocks": 88,
+      "chunks": 88,
+      "chunks_file": "corpus/phase1_chunks/icra-rationale-136718-2025.jsonl",
+      "filename": "icra-rationale-136718-2025.pdf",
+      "id": "icra-rationale-136718-2025",
+      "kind": "rating_rationale",
+      "pages": 10,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 10,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "b7a74060c7d7e1e80ef3118bfb595f56d902b41268c31691c4ed0996bbee6517",
+      "status": "ingested",
+      "table_chunks": 17
+    },
+    {
+      "blocks": 53,
+      "chunks": 53,
+      "chunks_file": "corpus/phase1_chunks/icra-rationale-136091-2025.jsonl",
+      "filename": "icra-rationale-136091-2025.pdf",
+      "id": "icra-rationale-136091-2025",
+      "kind": "rating_rationale",
+      "pages": 5,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 5,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "0fc5ba77d6d76c510cbadaea6f92e77ec8300ee80de51cc2b3d644f73352e914",
+      "status": "ingested",
+      "table_chunks": 9
+    },
+    {
+      "blocks": 72,
+      "chunks": 72,
+      "chunks_file": "corpus/phase1_chunks/icra-skh-m-india-2024.jsonl",
+      "filename": "icra-skh-m-india-2024.pdf",
+      "id": "icra-skh-m-india-2024",
+      "kind": "rating_rationale",
+      "pages": 7,
+      "parser": "pymupdf-fast-path+gemma-vision",
+      "routes": {
+        "digital": 7,
+        "hybrid": 0,
+        "scanned": 0
+      },
+      "sha256": "456dafe78dba8215c4f6ce1879860fd8bf4e69521b6cd9bb5d749154651b31a8",
+      "status": "ingested",
+      "table_chunks": 5
+    },
+    {
+      "blocks": null,
+      "chunks": null,
+      "filename": "sbi-card-integrated-annual-report-2025.pdf",
+      "id": "sbi-card-integrated-annual-report-2025",
+      "kind": "annual_report",
+      "pages": 405,
+      "routes": {
+        "digital": 390,
+        "hybrid": 8,
+        "scanned": 7
+      },
+      "sha256": "7be55da45e285e5c2927138cf212ba4a39f5e0fb4de80d7a12dee1a5c333bca5",
+      "status": "vision_required",
+      "table_chunks": null
+    },
+    {
+      "blocks": null,
+      "chunks": null,
+      "filename": "jm-financial-annual-report-2025.pdf",
+      "id": "jm-financial-annual-report-2025",
+      "kind": "annual_report",
+      "pages": 213,
+      "routes": {
+        "digital": 211,
+        "hybrid": 2,
+        "scanned": 0
+      },
+      "sha256": "1f31ad538ecefe549f117ae47fff43cf6966b8d09f14501dc39afecb63ad7ef3",
+      "status": "vision_required",
+      "table_chunks": null
+    },
+    {
+      "blocks": null,
+      "chunks": null,
+      "filename": "likhitha-infrastructure-annual-report-2025.pdf",
+      "id": "likhitha-infrastructure-annual-report-2025",
+      "kind": "annual_report",
+      "pages": 138,
+      "routes": {
+        "digital": 137,
+        "hybrid": 1,
+        "scanned": 0
+      },
+      "sha256": "f5dfcfc0104db312291e0be31127679d984144f04e3622fb5b53de174a64bc6a",
+      "status": "vision_required",
+      "table_chunks": null
+    }
+  ],
+  "ingestion_config_hash": "aa5e64257ecd3bae0f8633a726db39689024ace2af0f7cf3933572391eafe30b",
+  "summary": {
+    "chunks": 1236,
+    "documents": 18,
+    "ingested": 15,
+    "pages": 868,
+    "table_chunks": 188,
+    "vision_required": 3
+  }
+}

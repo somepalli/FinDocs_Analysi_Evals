@@ -1,0 +1,167 @@
+{
+  "documents": [
+    {
+      "bytes": 584979,
+      "filename": "icra-talcher-fertilizers-2025.pdf",
+      "id": "icra-talcher-fertilizers-2025",
+      "kind": "rating_rationale",
+      "sha256": "d7869492522a402a0ecb33e4d0791c1b33d1c3f2d80c3e05980041f9d74fd0cc",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?Id=136918"
+    },
+    {
+      "bytes": 542110,
+      "filename": "icra-sunbeam-generators-2025.pdf",
+      "id": "icra-sunbeam-generators-2025",
+      "kind": "rating_rationale",
+      "sha256": "44dd0a40135a9925c0b49d3b974b96714930b02a9cc033877fb33232ff28f0d3",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136124"
+    },
+    {
+      "bytes": 684956,
+      "filename": "icra-shree-pushkar-chemicals-2025.pdf",
+      "id": "icra-shree-pushkar-chemicals-2025",
+      "kind": "rating_rationale",
+      "sha256": "78fb20b29ec7dafc240eb1491af6beeb5f97c419de7f8a55f7dd0f0ab631e8c2",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136143"
+    },
+    {
+      "bytes": 561622,
+      "filename": "icra-kids-clinic-india-2025.pdf",
+      "id": "icra-kids-clinic-india-2025",
+      "kind": "rating_rationale",
+      "sha256": "0f6d0f8bd72d42d86dd5142ce766c1caafd9b0ef9b817e2a22cca0e1f546ede3",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136221"
+    },
+    {
+      "bytes": 605112,
+      "filename": "icra-mawana-sugars-2025.pdf",
+      "id": "icra-mawana-sugars-2025",
+      "kind": "rating_rationale",
+      "sha256": "d5af328a73423be251138bf2b586b167bc003139a378a2ec7699916844de3c45",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136344"
+    },
+    {
+      "bytes": 575406,
+      "filename": "icra-kinara-capital-2025.pdf",
+      "id": "icra-kinara-capital-2025",
+      "kind": "rating_rationale",
+      "sha256": "9570509e2c055919be172d24152283a13e6598abcbd559efc9c6de3c78ce1b19",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136853"
+    },
+    {
+      "bytes": 599457,
+      "filename": "icra-ned-energy-2025.pdf",
+      "id": "icra-ned-energy-2025",
+      "kind": "rating_rationale",
+      "sha256": "f8376cd193957b3803e22eb184d2515f0325fe9473b3ac6040f1dbcac06569b3",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136834"
+    },
+    {
+      "bytes": 613630,
+      "filename": "icra-desai-brothers-2025.pdf",
+      "id": "icra-desai-brothers-2025",
+      "kind": "rating_rationale",
+      "sha256": "062c1c21bfcf3882cec5a9805bec4310a36062cca454681219195efeaff3271e",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136833"
+    },
+    {
+      "bytes": 552344,
+      "filename": "icra-rationale-136204-2025.pdf",
+      "id": "icra-rationale-136204-2025",
+      "kind": "rating_rationale",
+      "sha256": "25e737a59366d2ed9b97b9e939c2aa78a6c83a311049e78f8d9dd00005221413",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136204"
+    },
+    {
+      "bytes": 586114,
+      "filename": "icra-rationale-136513-2025.pdf",
+      "id": "icra-rationale-136513-2025",
+      "kind": "rating_rationale",
+      "sha256": "8b79bcfa32c75940466b6cad21c912afa530dbae7c2155f3ad289bf440617588",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136513"
+    },
+    {
+      "bytes": 558852,
+      "filename": "icra-rationale-136241-2025.pdf",
+      "id": "icra-rationale-136241-2025",
+      "kind": "rating_rationale",
+      "sha256": "91fd1b46e2250d68fcc4a738809e9d38413185bd1dfca7ed18e4f231dd2e4081",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136241"
+    },
+    {
+      "bytes": 675224,
+      "filename": "icra-rationale-136778-2025.pdf",
+      "id": "icra-rationale-136778-2025",
+      "kind": "rating_rationale",
+      "sha256": "b09e6ecec18f0e3e44aecfc31ac3743f4e7dbc02c4b9b9f1ad041c0dcab98d1e",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136778"
+    },
+    {
+      "bytes": 672951,
+      "filename": "icra-rationale-136718-2025.pdf",
+      "id": "icra-rationale-136718-2025",
+      "kind": "rating_rationale",
+      "sha256": "b7a74060c7d7e1e80ef3118bfb595f56d902b41268c31691c4ed0996bbee6517",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136718"
+    },
+    {
+      "bytes": 567370,
+      "filename": "icra-rationale-136091-2025.pdf",
+      "id": "icra-rationale-136091-2025",
+      "kind": "rating_rationale",
+      "sha256": "0fc5ba77d6d76c510cbadaea6f92e77ec8300ee80de51cc2b3d644f73352e914",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=136091"
+    },
+    {
+      "bytes": 291903,
+      "filename": "icra-skh-m-india-2024.pdf",
+      "id": "icra-skh-m-india-2024",
+      "kind": "rating_rationale",
+      "sha256": "456dafe78dba8215c4f6ce1879860fd8bf4e69521b6cd9bb5d749154651b31a8",
+      "source": "ICRA",
+      "url": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=128760"
+    },
+    {
+      "bytes": 18560418,
+      "filename": "sbi-card-integrated-annual-report-2025.pdf",
+      "id": "sbi-card-integrated-annual-report-2025",
+      "kind": "annual_report",
+      "sha256": "7be55da45e285e5c2927138cf212ba4a39f5e0fb4de80d7a12dee1a5c333bca5",
+      "source": "SBI Card",
+      "url": "https://www.sbicard.com/sbi-card-en/assets/docs/pdf/who-we-are/notices/Integrated-annual-report-fy-2024-25.pdf"
+    },
+    {
+      "bytes": 12917481,
+      "filename": "jm-financial-annual-report-2025.pdf",
+      "id": "jm-financial-annual-report-2025",
+      "kind": "annual_report",
+      "sha256": "1f31ad538ecefe549f117ae47fff43cf6966b8d09f14501dc39afecb63ad7ef3",
+      "source": "JM Financial",
+      "url": "https://jmfl.com/Common/getFile/5121"
+    },
+    {
+      "bytes": 9305944,
+      "filename": "likhitha-infrastructure-annual-report-2025.pdf",
+      "id": "likhitha-infrastructure-annual-report-2025",
+      "kind": "annual_report",
+      "sha256": "f5dfcfc0104db312291e0be31127679d984144f04e3622fb5b53de174a64bc6a",
+      "source": "Likhitha Infrastructure",
+      "url": "https://www.likhitha.co.in/assets/pdf/Annual_Report_2024-25.pdf"
+    }
+  ],
+  "name": "phase1-official-indian-filings"
+}

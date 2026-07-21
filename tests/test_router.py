@@ -17,3 +17,13 @@ def test_routes_scanned_page() -> None:
     decision = PageRouter().route(FIXTURES / "scanned.pdf")
     assert decision[0].route is PageRoute.SCANNED
     assert decision[0].image_coverage >= 0.70
+
+
+def test_strong_text_layer_overrides_decorative_full_page_image() -> None:
+    router = PageRouter()
+    assert router._classify(400, 1.0) is PageRoute.DIGITAL
+
+
+def test_sparse_text_with_large_image_routes_to_hybrid() -> None:
+    router = PageRouter()
+    assert router._classify(80, 0.5) is PageRoute.HYBRID
