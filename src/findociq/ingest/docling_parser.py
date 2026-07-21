@@ -1,0 +1,273 @@
+"""Docling-first parser with an explicit PyMuPDF digital-page fast path."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import fitz
+
+from findociq.ingest.router import PageRouter
+from findociq.ingest.schema import (
+    BlockType,
+    BoundingBox,
+    DocumentBlock,
+    PageRoute,
+    ParsedDocument,
+    ParsedPage,
+    Provenance,
+    stable_document_id,
+)
+from findociq.ingest.vlm_fallback import (
+    UnconfiguredGemmaVisionExtractor,
+    VisionPageExtractor,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ParserConfig:
+    prefer_docling: bool = True
+    fail_on_vision_required: bool = True
+
+
+class DocumentParser:
+    """Parse a PDF while preserving block geometry and page routing decisions."""
+
+    def __init__(
+        self,
+        config: ParserConfig | None = None,
+        router: PageRouter | None = None,
+        vision_extractor: VisionPageExtractor | None = None,
+    ) -> None:
+        self.config = config or ParserConfig()
+        self.router = router or PageRouter()
+        self.vision_extractor = vision_extractor or UnconfiguredGemmaVisionExtractor()
+
+    def parse(self, pdf_path: str | Path) -> ParsedDocument:
+        path = Path(pdf_path).resolve()
+        document_id = stable_document_id(path)
+        decisions = self.router.route(path)
+
+        if self.config.prefer_docling and all(
+            decision.route is PageRoute.DIGITAL for decision in decisions
+        ):
+            docling_result = self._try_docling(path, document_id, decisions)
+            if docling_result is not None:
+                return docling_result
+
+        pages: list[ParsedPage] = []
+        with fitz.open(path) as document:
+            for decision, page in zip(decisions, document, strict=True):
+                if decision.route is PageRoute.DIGITAL:
+                    blocks = self._parse_digital_page(path, document_id, page)
+                else:
+                    try:
+                        blocks = self.vision_extractor.extract_page(
+                            pdf_path=str(path),
+                            page_number=decision.page_number,
+                            document_id=document_id,
+                        )
+                    except RuntimeError:
+                        if self.config.fail_on_vision_required:
+                            raise
+                        blocks = ()
+                pages.append(
+                    ParsedPage(
+                        page_number=decision.page_number,
+                        route=decision.route,
+                        blocks=blocks,
+                    )
+                )
+        return ParsedDocument(
+            document_id=document_id,
+            source_path=str(path),
+            pages=tuple(pages),
+            parser_name="pymupdf-fast-path+gemma-vision",
+        )
+
+    def _try_docling(
+        self,
+        path: Path,
+        document_id: str,
+        decisions: tuple[Any, ...],
+    ) -> ParsedDocument | None:
+        """Use Docling when installed, falling back safely if unavailable.
+
+        Docling's JSON schema changes more frequently than our internal schema.
+        The adapter therefore consumes its stable document item iterator and
+        returns `None` on an unsupported version rather than dropping geometry.
+        """
+
+        try:
+            from docling.document_converter import DocumentConverter
+        except ImportError:
+            return None
+
+        try:
+            converted = DocumentConverter().convert(path)
+            items = converted.document.iterate_items()
+            by_page: dict[int, list[DocumentBlock]] = {
+                decision.page_number: [] for decision in decisions
+            }
+            for order, entry in enumerate(items):
+                item = entry[0] if isinstance(entry, tuple) else entry
+                text = str(getattr(item, "text", "")).strip()
+                provenance_items = getattr(item, "prov", ())
+                if not text or not provenance_items:
+                    continue
+                source = provenance_items[0]
+                page_number = int(source.page_no)
+                bbox = source.bbox
+                page_size = source.page_size
+                label = str(getattr(item, "label", "text")).lower()
+                block_type = self._docling_block_type(label)
+                by_page[page_number].append(
+                    DocumentBlock(
+                        block_type=block_type,
+                        text=text,
+                        provenance=Provenance(
+                            document_id=document_id,
+                            source_path=str(path),
+                            page_number=page_number,
+                            bbox=BoundingBox(
+                                x0=float(bbox.l),
+                                y0=float(bbox.t),
+                                x1=float(bbox.r),
+                                y1=float(bbox.b),
+                            ),
+                            page_width=float(page_size.width),
+                            page_height=float(page_size.height),
+                        ),
+                        order=order,
+                    )
+                )
+            if not any(by_page.values()):
+                return None
+            pages = tuple(
+                ParsedPage(
+                    page_number=decision.page_number,
+                    route=decision.route,
+                    blocks=tuple(by_page[decision.page_number]),
+                )
+                for decision in decisions
+            )
+            return ParsedDocument(
+                document_id=document_id,
+                source_path=str(path),
+                pages=pages,
+                parser_name="docling",
+            )
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _docling_block_type(label: str) -> BlockType:
+        if "table" in label:
+            return BlockType.TABLE
+        if "caption" in label:
+            return BlockType.CAPTION
+        if "title" in label or "heading" in label or "section" in label:
+            return BlockType.HEADING
+        if "picture" in label or "image" in label:
+            return BlockType.IMAGE
+        return BlockType.PARAGRAPH
+
+    @staticmethod
+    def _parse_digital_page(
+        path: Path,
+        document_id: str,
+        page: fitz.Page,
+    ) -> tuple[DocumentBlock, ...]:
+        table_rects = DocumentParser._table_rectangles(page)
+        blocks: list[DocumentBlock] = []
+        order = 0
+
+        for table_index, table in enumerate(table_rects):
+            markdown = table[1]
+            blocks.append(
+                DocumentBlock(
+                    block_type=BlockType.TABLE,
+                    text=markdown,
+                    provenance=DocumentParser._provenance(path, document_id, page, table[0]),
+                    order=order,
+                    table_id=f"p{page.number + 1}-t{table_index + 1}",
+                )
+            )
+            order += 1
+
+        raw_blocks = page.get_text("blocks", sort=True)
+        for raw in raw_blocks:
+            rectangle = fitz.Rect(raw[:4])
+            text = str(raw[4]).strip()
+            if not text or any(rectangle.intersects(table[0]) for table in table_rects):
+                continue
+            blocks.append(
+                DocumentBlock(
+                    block_type=DocumentParser._infer_text_type(text),
+                    text=text,
+                    provenance=DocumentParser._provenance(path, document_id, page, rectangle),
+                    order=order,
+                )
+            )
+            order += 1
+
+        blocks.sort(
+            key=lambda block: (
+                block.provenance.bbox.y0,
+                block.provenance.bbox.x0,
+                block.order,
+            )
+        )
+        return tuple(
+            block.model_copy(update={"order": index}) for index, block in enumerate(blocks)
+        )
+
+    @staticmethod
+    def _table_rectangles(page: fitz.Page) -> list[tuple[fitz.Rect, str]]:
+        try:
+            tables = page.find_tables().tables
+        except (AttributeError, RuntimeError):
+            return []
+        results: list[tuple[fitz.Rect, str]] = []
+        for table in tables:
+            rows = table.extract()
+            if not rows:
+                continue
+            normalized = [
+                ["" if cell is None else str(cell).replace("\n", " ").strip() for cell in row]
+                for row in rows
+            ]
+            width = max(len(row) for row in normalized)
+            padded = [row + [""] * (width - len(row)) for row in normalized]
+            header = padded[0]
+            separator = ["---"] * width
+            markdown_rows = [header, separator, *padded[1:]]
+            markdown = "\n".join("| " + " | ".join(row) + " |" for row in markdown_rows)
+            results.append((fitz.Rect(table.bbox), markdown))
+        return results
+
+    @staticmethod
+    def _infer_text_type(text: str) -> BlockType:
+        first_line = text.splitlines()[0].strip()
+        if first_line.lower().startswith(("table ", "figure ")) and len(text) < 240:
+            return BlockType.CAPTION
+        if len(first_line) < 100 and (first_line.isupper() or first_line.rstrip(":").istitle()):
+            return BlockType.HEADING
+        return BlockType.PARAGRAPH
+
+    @staticmethod
+    def _provenance(
+        path: Path,
+        document_id: str,
+        page: fitz.Page,
+        rectangle: fitz.Rect,
+    ) -> Provenance:
+        return Provenance(
+            document_id=document_id,
+            source_path=str(path),
+            page_number=page.number + 1,
+            bbox=BoundingBox.from_tuple(tuple(rectangle)),
+            page_width=page.rect.width,
+            page_height=page.rect.height,
+        )

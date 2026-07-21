@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "findociq"
+version = "0.1.0"
+description = "Open-weights financial document intelligence for Indian filings"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "Apache-2.0" }
+dependencies = [
+  "pydantic==2.10.3",
+  "PyMuPDF==1.27.2.3",
+  "PyYAML==6.0.3",
+]
+
+[project.optional-dependencies]
+docling = ["docling==2.62.0"]
+dev = [
+  "pytest==8.3.4",
+  "ruff==0.9.10",
+]
+
+[project.scripts]
+findociq-ingest = "findociq.ingest.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/findociq"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

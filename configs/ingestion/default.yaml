@@ -1,0 +1,10 @@
+router:
+  min_digital_characters: 40
+  scanned_image_coverage: 0.70
+  hybrid_image_coverage: 0.20
+parser:
+  prefer_docling: true
+  fail_on_vision_required: true
+chunker:
+  max_text_characters: 1800
+  overlap_characters: 180

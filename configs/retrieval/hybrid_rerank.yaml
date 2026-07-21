@@ -1,0 +1,4 @@
+name: hybrid_rerank
+mode: hybrid_rrf
+retrieve_top_k: 50
+rerank_top_k: 8

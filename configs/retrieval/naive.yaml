@@ -1,0 +1,4 @@
+name: naive
+mode: dense
+retrieve_top_k: 8
+rerank_top_k: null
