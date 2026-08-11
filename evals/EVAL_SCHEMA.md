@@ -64,3 +64,10 @@ Cases without an expected answer are excluded from answer denominators.
 Every result records the dataset SHA-256 and a config hash. Live runs use the
 pinned model revisions in `configs/index/default.yaml`; smoke records are
 explicitly labeled as fixture-backed and are not benchmark claims.
+
+`--live --live-reasoning` retrieves each corpus-backed case with the selected
+strategy and executes both reasoning modes against the pinned local Gemma
+runtime. Each reasoning config hash covers the reasoning pipeline, generation
+runtime, retrieval strategy, and index configuration. The generated
+`reasoning_predictions.json` preserves the complete page/bbox citations used
+for scoring.

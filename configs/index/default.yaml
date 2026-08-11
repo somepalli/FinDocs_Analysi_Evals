@@ -1,6 +1,7 @@
 embedding:
   model_id: BAAI/bge-m3
   revision: 5617a9f61b028005a4858fdac845db406aefb181
+  snapshot_dir: .artifacts/models/bge-m3-5617a9f
   dense_dimension: 1024
   batch_size: 8
   max_length: 8192
@@ -8,6 +9,7 @@ embedding:
 reranker:
   model_id: BAAI/bge-reranker-v2-m3
   revision: 953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e
+  snapshot_dir: .artifacts/models/bge-reranker-v2-m3-953dc6f
   use_fp16: true
 store:
   url: http://localhost:6333

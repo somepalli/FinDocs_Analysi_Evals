@@ -3,7 +3,7 @@
   "results": [
     {
       "strategy": "naive",
-      "config_hash": "f038e2af9f6d4c6442f26475711d12f0bcbb64b8ec3fbf86f2444b46ef1c6fe4",
+      "config_hash": "32038fce3a56b5aeb8478cb30afbfc3520aae3d07a7cd111a58dca837e92107f",
       "backend": "fixture",
       "retrieval": {
         "query_count": 2,
@@ -25,7 +25,7 @@
     },
     {
       "strategy": "hybrid",
-      "config_hash": "2bc18a841ef6088804fb8bec8eb3d1938762eb40a9fce67d8bd197192fea06c1",
+      "config_hash": "700f8a4314feed6e002cb09c59c023042ba7534d836ddf52d3ea31d34c8bfbf0",
       "backend": "fixture",
       "retrieval": {
         "query_count": 2,
@@ -47,7 +47,7 @@
     },
     {
       "strategy": "hybrid_rerank",
-      "config_hash": "16eec81748c89b0d0c53e02b634c28c9d5405fced4f5ca82a47714f5ee6d418a",
+      "config_hash": "ae26097a530cb77127b8dcf0bc6579f8e5839d23b1b2cb5bb40cb71f829d3b7f",
       "backend": "fixture",
       "retrieval": {
         "query_count": 2,
@@ -57,6 +57,42 @@
         "mrr": 1.0,
         "ndcg_at_8": 1.0
       },
+      "answer": {
+        "answer_count": 2,
+        "exact_match_accuracy": 1.0,
+        "numeric_exact_accuracy": 1.0,
+        "text_exact_accuracy": null,
+        "citation_precision": 1.0,
+        "citation_recall": 1.0,
+        "citation_f1": 1.0
+      }
+    }
+  ],
+  "reasoning": [
+    {
+      "mode": "single_pass",
+      "config_hash": "c2da46f42db920674864118d9da51157a45c96e10602067a31d5279d05600c42",
+      "backend": "fixture",
+      "model_id": null,
+      "model_revision": null,
+      "retrieval_strategy": null,
+      "answer": {
+        "answer_count": 2,
+        "exact_match_accuracy": 0.5,
+        "numeric_exact_accuracy": 0.5,
+        "text_exact_accuracy": null,
+        "citation_precision": 1.0,
+        "citation_recall": 1.0,
+        "citation_f1": 1.0
+      }
+    },
+    {
+      "mode": "two_pass",
+      "config_hash": "806ed23a56d20221372c08199bd6361674a685fc7818df62a6b48dbf5bfc8ec2",
+      "backend": "fixture",
+      "model_id": null,
+      "model_revision": null,
+      "retrieval_strategy": null,
       "answer": {
         "answer_count": 2,
         "exact_match_accuracy": 1.0,

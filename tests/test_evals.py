@@ -35,11 +35,19 @@ def test_eval_schema_and_fixture_records_load() -> None:
     assert answers["hybrid_rerank"]["q-revenue"].answer == "1240"
 
 
+def test_phase4_dataset_is_corpus_backed_with_bbox_targets() -> None:
+    cases = load_cases(ROOT / "evals/datasets/phase4_corpus.jsonl")
+    assert len(cases) == 5
+    assert all(case.expected_answer is not None for case in cases)
+    assert all(case.expected_citations[0].bbox is not None for case in cases)
+
+
 def test_numeric_matching_handles_currency_grouping_and_tolerance() -> None:
     assert parse_number("INR (1,240.5) crore") == -1240.5
     expected = AnswerExpectation(answer_type="numeric", value="1240", tolerance=0.5)
     assert score_answer_value("₹1,240.4 crore", expected)
     assert not score_answer_value("1,241", expected)
+    assert score_answer_value("In FY2025, revenue was INR 1,240 crore.", expected)
 
 
 def test_text_matching_normalizes_case_punctuation_and_space() -> None:
@@ -104,6 +112,7 @@ def test_fixture_sweep_writes_separate_markdown_tables(tmp_path: Path) -> None:
     cases = load_cases(ROOT / "evals/datasets/smoke.jsonl")
     records = load_retrieval_records(ROOT / "evals/datasets/smoke_retrieval.json")
     answers = load_answer_records(ROOT / "evals/datasets/smoke_answers.json")
+    reasoning = load_answer_records(ROOT / "evals/datasets/smoke_reasoning_answers.json")
     result = run_sweep(
         cases,
         strategy_paths={
@@ -113,6 +122,7 @@ def test_fixture_sweep_writes_separate_markdown_tables(tmp_path: Path) -> None:
         dataset_sha256="dataset-hash",
         retrieval_records=records,
         answer_records=answers,
+        reasoning_records=reasoning,
         index_config_path=ROOT / "configs/index/default.yaml",
     )
     json_path, markdown_path = write_results(result, tmp_path)
@@ -120,5 +130,6 @@ def test_fixture_sweep_writes_separate_markdown_tables(tmp_path: Path) -> None:
     markdown = markdown_path.read_text(encoding="utf-8")
     assert "## Retrieval quality" in markdown
     assert "## Answer quality" in markdown
+    assert "## Reasoning comparison" in markdown
     assert "hybrid_rerank" in markdown
     assert render_markdown(result) == markdown

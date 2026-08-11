@@ -11,17 +11,22 @@ NUMBER_PATTERN = re.compile(r"[-+]?\(?\s*\d[\d,]*(?:\.\d+)?\s*\)?")
 
 
 def parse_number(value: str) -> float | None:
-    match = NUMBER_PATTERN.search(value)
-    if match is None:
-        return None
-    token = match.group(0).replace(",", "").replace(" ", "")
-    negative = token.startswith("(") and token.endswith(")")
-    token = token.strip("()")
-    try:
-        number = float(token)
-    except ValueError:
-        return None
-    return -number if negative else number
+    numbers = parse_numbers(value)
+    return numbers[0] if numbers else None
+
+
+def parse_numbers(value: str) -> tuple[float, ...]:
+    numbers: list[float] = []
+    for match in NUMBER_PATTERN.finditer(value):
+        token = match.group(0).replace(",", "").replace(" ", "")
+        negative = token.startswith("(") and token.endswith(")")
+        token = token.strip("()")
+        try:
+            number = float(token)
+        except ValueError:
+            continue
+        numbers.append(-number if negative else number)
+    return tuple(numbers)
 
 
 def normalized_text(value: str) -> str:
@@ -32,9 +37,8 @@ def normalized_text(value: str) -> str:
 
 def score_answer_value(predicted: str, expected: AnswerExpectation) -> bool:
     if expected.answer_type == "numeric":
-        actual = parse_number(predicted)
         target = parse_number(expected.value)
-        return (
-            actual is not None and target is not None and abs(actual - target) <= expected.tolerance
+        return target is not None and any(
+            abs(actual - target) <= expected.tolerance for actual in parse_numbers(predicted)
         )
     return normalized_text(predicted) == normalized_text(expected.value)

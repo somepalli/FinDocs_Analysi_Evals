@@ -1,6 +1,6 @@
 name: single_gpu
 model_id: google/gemma-3-12b-it
-revision: pinned-before-first-eval
+revision: 96b6f1eccf38110c56df3a15bffe176da04bfd80
 quantization: awq-int4
 temperature: 0.0
 seed: 17

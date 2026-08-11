@@ -17,18 +17,25 @@ from pydantic import TypeAdapter
 
 from evals.schema import (
     AnswerPrediction,
+    CitationTarget,
     EvalCase,
+    ReasoningPrediction,
+    ReasoningResult,
     RetrievedItem,
     StrategyResult,
     SweepResult,
 )
 from evals.scorers.answers import aggregate_answers
 from evals.scorers.retrieval import aggregate_retrieval
+from findociq.index.embedder import BgeM3Embedder
+from findociq.index.store import QdrantStore
+from findociq.reason.generation import GenerationClient, GenerationConfig, LocalGemmaClient
+from findociq.reason.pipeline import ReasoningPipeline, ReasoningPipelineConfig
 from findociq.retrieve.pipeline import (
     RetrievalPipeline,
     RetrievalRuntimeConfig,
-    build_local_pipeline,
 )
+from findociq.retrieve.rerank import BgeReranker
 
 CASE_ADAPTER = TypeAdapter(EvalCase)
 ANSWER_ADAPTER = TypeAdapter(AnswerPrediction)
@@ -88,8 +95,10 @@ def run_sweep(
     dataset_sha256: str,
     retrieval_records: dict[str, dict[str, tuple[RetrievedItem, ...]]] | None = None,
     answer_records: dict[str, dict[str, AnswerPrediction]] | None = None,
+    reasoning_records: dict[str, dict[str, AnswerPrediction]] | None = None,
     pipeline_factory: Callable[[str, Path], RetrievalPipeline] | None = None,
     index_config_path: Path = Path("configs/index/default.yaml"),
+    reasoning_config_dir: Path = Path("configs/pipeline"),
 ) -> SweepResult:
     results: list[StrategyResult] = []
     for strategy, config_path in strategy_paths.items():
@@ -114,7 +123,96 @@ def run_sweep(
                 answer=answer,
             )
         )
-    return SweepResult(dataset_sha256=dataset_sha256, results=tuple(results))
+    reasoning: list[ReasoningResult] = []
+    if reasoning_records is not None:
+        for mode, predictions in reasoning_records.items():
+            reasoning.append(
+                ReasoningResult(
+                    mode=mode,
+                    config_hash=file_hash(reasoning_config_dir / f"{mode}.yaml"),
+                    backend="fixture",
+                    answer=aggregate_answers(cases, predictions),
+                )
+            )
+    return SweepResult(
+        dataset_sha256=dataset_sha256,
+        results=tuple(results),
+        reasoning=tuple(reasoning),
+    )
+
+
+def run_live_reasoning(
+    cases: Sequence[EvalCase],
+    *,
+    retrieval_pipeline: RetrievalPipeline,
+    retrieval_strategy: str,
+    generation_client: GenerationClient,
+    generation_config: GenerationConfig,
+    generation_config_path: Path,
+    reasoning_config_dir: Path,
+    retrieval_config_path: Path,
+    index_config_path: Path,
+) -> tuple[tuple[ReasoningResult, ...], dict[str, dict[str, ReasoningPrediction]]]:
+    hits = {case.question_id: retrieval_pipeline.retrieve(case.question) for case in cases}
+    results: list[ReasoningResult] = []
+    all_predictions: dict[str, dict[str, ReasoningPrediction]] = {}
+    for mode in ("single_pass", "two_pass"):
+        pipeline_path = reasoning_config_dir / f"{mode}.yaml"
+        pipeline = ReasoningPipeline(
+            ReasoningPipelineConfig.from_yaml(pipeline_path),
+            generation_client,
+        )
+        predictions: dict[str, ReasoningPrediction] = {}
+        for case in cases:
+            try:
+                run = pipeline.run(case.question, hits[case.question_id])
+                prediction = ReasoningPrediction(
+                    answer=run.answer.answer,
+                    citations=tuple(
+                        CitationTarget.model_validate(item.model_dump(mode="json"))
+                        for item in run.answer.citations
+                    ),
+                )
+            except (RuntimeError, ValueError) as error:
+                prediction = ReasoningPrediction(
+                    answer="",
+                    citations=(),
+                    error=f"{type(error).__name__}: {error}",
+                )
+            predictions[case.question_id] = prediction
+        all_predictions[mode] = predictions
+        results.append(
+            ReasoningResult(
+                mode=mode,
+                config_hash=file_hash(
+                    pipeline_path,
+                    generation_config_path,
+                    retrieval_config_path,
+                    index_config_path,
+                ),
+                backend="live",
+                model_id=generation_config.model_id,
+                model_revision=generation_config.revision,
+                retrieval_strategy=retrieval_strategy,
+                answer=aggregate_answers(cases, predictions),
+            )
+        )
+    return tuple(results), all_predictions
+
+
+def write_reasoning_predictions(
+    records: dict[str, dict[str, ReasoningPrediction]], output_dir: str | Path
+) -> Path:
+    path = Path(output_dir) / "reasoning_predictions.json"
+    payload = {
+        mode: {
+            question_id: prediction.model_dump(mode="json")
+            for question_id, prediction in predictions.items()
+        }
+        for mode, predictions in records.items()
+    }
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return path
 
 
 def write_results(result: SweepResult, output_dir: str | Path) -> tuple[Path, Path]:
@@ -168,6 +266,26 @@ def render_markdown(result: SweepResult) -> str:
                 f"{metrics.citation_precision:.3f} | {metrics.citation_recall:.3f} | "
                 f"{metrics.citation_f1:.3f} |"
             )
+    if result.reasoning:
+        lines.extend(
+            [
+                "",
+                "## Reasoning comparison",
+                "",
+                "| Mode | Backend | Model | Retrieval | Answers | Exact | "
+                "Numeric exact | Citation F1 |",
+                "|---|---|---|---|---:|---:|---:|---:|",
+            ]
+        )
+        for item in result.reasoning:
+            metrics = item.answer
+            lines.append(
+                f"| {item.mode} | {item.backend} | {item.model_id or '-'} | "
+                f"{item.retrieval_strategy or '-'} | {metrics.answer_count} | "
+                f"{metrics.exact_match_accuracy:.3f} | "
+                f"{_optional_metric(metrics.numeric_exact_accuracy)} | "
+                f"{metrics.citation_f1:.3f} |"
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -178,18 +296,51 @@ def main() -> None:
     cases = load_cases(args.dataset)
     records = None if args.live else load_retrieval_records(args.retrieval_records)
     answers = load_answer_records(args.answer_predictions) if args.answer_predictions else None
+    reasoning = (
+        load_answer_records(args.reasoning_predictions) if args.reasoning_predictions else None
+    )
+    if args.live_reasoning and not args.live:
+        raise SystemExit("--live-reasoning requires --live")
+    if args.live_reasoning and reasoning is not None:
+        raise SystemExit("use either --live-reasoning or --reasoning-predictions")
     strategy_paths = {name: args.config_dir / f"{name}.yaml" for name in STRATEGIES}
+    pipeline_factory = _default_pipeline_factory(args.index_config) if args.live else None
     result = run_sweep(
         cases,
         strategy_paths=strategy_paths,
         dataset_sha256=file_hash(args.dataset),
         retrieval_records=records,
         answer_records=answers,
+        reasoning_records=reasoning,
+        pipeline_factory=pipeline_factory,
         index_config_path=args.index_config,
+        reasoning_config_dir=args.reasoning_config_dir,
     )
+    live_predictions = None
+    if args.live_reasoning:
+        generation_config = GenerationConfig.from_yaml(args.generation_config)
+        retrieval_config = args.config_dir / f"{args.reasoning_retrieval_strategy}.yaml"
+        assert pipeline_factory is not None
+        live_reasoning, live_predictions = run_live_reasoning(
+            cases,
+            retrieval_pipeline=pipeline_factory(
+                args.reasoning_retrieval_strategy,
+                retrieval_config,
+            ),
+            retrieval_strategy=args.reasoning_retrieval_strategy,
+            generation_client=LocalGemmaClient(generation_config),
+            generation_config=generation_config,
+            generation_config_path=args.generation_config,
+            reasoning_config_dir=args.reasoning_config_dir,
+            retrieval_config_path=retrieval_config,
+            index_config_path=args.index_config,
+        )
+        result = result.model_copy(update={"reasoning": live_reasoning})
     json_path, markdown_path = write_results(result, args.results_dir)
     print(f"wrote {json_path}")
     print(f"wrote {markdown_path}")
+    if live_predictions is not None:
+        print(f"wrote {write_reasoning_predictions(live_predictions, args.results_dir)}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -203,9 +354,22 @@ def parse_args() -> argparse.Namespace:
         default=Path("evals/datasets/smoke_retrieval.json"),
     )
     parser.add_argument("--answer-predictions", type=Path)
+    parser.add_argument("--reasoning-predictions", type=Path)
+    parser.add_argument("--live-reasoning", action="store_true")
     parser.add_argument("--results-dir", type=Path, default=Path("evals/results"))
     parser.add_argument("--config-dir", type=Path, default=Path("configs/retrieval"))
     parser.add_argument("--index-config", type=Path, default=Path("configs/index/default.yaml"))
+    parser.add_argument("--reasoning-config-dir", type=Path, default=Path("configs/pipeline"))
+    parser.add_argument(
+        "--generation-config",
+        type=Path,
+        default=Path("configs/reasoning/gemma_local.yaml"),
+    )
+    parser.add_argument(
+        "--reasoning-retrieval-strategy",
+        choices=STRATEGIES,
+        default="hybrid_rerank",
+    )
     return parser.parse_args()
 
 
@@ -229,9 +393,32 @@ def _retrieve_live(
 
 
 def _default_pipeline_factory(index_path: Path) -> Callable[[str, Path], RetrievalPipeline]:
-    def factory(_: str, strategy_path: Path) -> RetrievalPipeline:
+    embedder: BgeM3Embedder | None = None
+    store: QdrantStore | None = None
+    reranker: BgeReranker | None = None
+    pipelines: dict[str, RetrievalPipeline] = {}
+
+    def factory(strategy: str, strategy_path: Path) -> RetrievalPipeline:
+        nonlocal embedder, store, reranker
+        if strategy in pipelines:
+            return pipelines[strategy]
         runtime = RetrievalRuntimeConfig.from_yaml(index_path, strategy_path)
-        return build_local_pipeline(runtime)
+        if embedder is None:
+            embedder = BgeM3Embedder(runtime.embedding)
+        if store is None:
+            store = QdrantStore(runtime.store)
+        selected_reranker = None
+        if runtime.strategy.rerank_top_k is not None:
+            if reranker is None:
+                reranker = BgeReranker(runtime.reranker)
+            selected_reranker = reranker
+        pipelines[strategy] = RetrievalPipeline(
+            runtime.strategy,
+            embedder,
+            store,
+            selected_reranker,
+        )
+        return pipelines[strategy]
 
     return factory
 

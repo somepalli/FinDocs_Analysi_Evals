@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 class EmbeddingConfig:
     model_id: str
     revision: str
+    snapshot_dir: str | None = None
     dense_dimension: int = 1024
     batch_size: int = 8
     max_length: int = 8192
@@ -126,6 +127,7 @@ class BgeM3Embedder:
                 snapshot_download(
                     repo_id=self.config.model_id,
                     revision=self.config.revision,
+                    local_dir=self.config.snapshot_dir,
                 )
             )
             self._model = BGEM3FlagModel(

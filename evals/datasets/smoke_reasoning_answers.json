@@ -1,0 +1,10 @@
+{
+  "single_pass": {
+    "q-revenue": {"answer": "1240", "citations": [{"document_id": "digital-fixture", "page_number": 1}]},
+    "q-ebitda": {"answer": "142", "citations": [{"document_id": "digital-fixture", "page_number": 1}]}
+  },
+  "two_pass": {
+    "q-revenue": {"answer": "1240", "citations": [{"document_id": "digital-fixture", "page_number": 1}]},
+    "q-ebitda": {"answer": "186", "citations": [{"document_id": "digital-fixture", "page_number": 1}]}
+  }
+}

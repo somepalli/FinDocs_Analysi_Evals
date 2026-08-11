@@ -5,6 +5,7 @@ import pytest
 from findociq.index.embedder import BgeM3Embedder, Embedding, EmbeddingConfig
 from findociq.index.store import IndexRecord
 from findociq.ingest.schema import BoundingBox, Provenance, TextChunk
+from findociq.retrieve.cli import _chunk_files
 from findociq.retrieve.hybrid import reciprocal_rank_fusion
 from findociq.retrieve.pipeline import (
     RetrievalPipeline,
@@ -137,6 +138,13 @@ def test_pipeline_runs_dense_strategy_and_keeps_provenance() -> None:
     assert results[0].chunk.provenance[0].page_number == 1
 
 
+def test_pipeline_caches_deterministic_query_results() -> None:
+    embedder = FakeEmbedder()
+    pipeline = RetrievalPipeline(strategy("dense"), embedder, FakeStore())
+    assert pipeline.retrieve("revenue") is pipeline.retrieve("revenue")
+    assert embedder.queries == ["revenue"]
+
+
 def test_pipeline_runs_hybrid_strategy_with_rrf_parameters() -> None:
     store = FakeStore()
     RetrievalPipeline(strategy("hybrid_rrf"), FakeEmbedder(), store).retrieve("revenue")
@@ -163,3 +171,12 @@ def test_all_three_yaml_strategies_load() -> None:
     )
     assert runtime.embedding.model_id == "BAAI/bge-m3"
     assert isinstance(runtime.reranker, RerankerConfig)
+
+
+def test_chunk_files_expands_directories_in_stable_order(tmp_path: Path) -> None:
+    second = tmp_path / "b.jsonl"
+    first = tmp_path / "a.jsonl"
+    ignored = tmp_path / "notes.txt"
+    for path in (second, first, ignored):
+        path.write_text("\n", encoding="utf-8")
+    assert _chunk_files([tmp_path]) == (first, second)

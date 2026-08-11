@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     index = subparsers.add_parser("index", help="embed JSONL chunks and upsert them to Qdrant")
-    index.add_argument("chunks", type=Path)
+    index.add_argument("chunks", type=Path, nargs="+")
     index.add_argument("--index-config", type=Path, default=Path("configs/index/default.yaml"))
     index.add_argument("--batch-size", type=int, default=8)
 
@@ -53,19 +53,33 @@ def index_chunks(args: argparse.Namespace) -> None:
     embedder = BgeM3Embedder(runtime.embedding)
     store = QdrantStore(runtime.store)
     store.ensure_collection(embedder.dimension)
-    batch: list[Chunk] = []
+    chunks: list[Chunk] = []
+    for source in _chunk_files(args.chunks):
+        with source.open(encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                chunks.append(CHUNK_ADAPTER.validate_json(line))
+    chunks.sort(key=lambda chunk: (len(chunk.text), chunk.chunk_id))
+    print(f"indexing {len(chunks)} chunks in deterministic length-bucketed batches")
     total = 0
-    with args.chunks.open(encoding="utf-8") as handle:
-        for line in handle:
-            if not line.strip():
-                continue
-            batch.append(CHUNK_ADAPTER.validate_json(line))
-            if len(batch) >= args.batch_size:
-                total += _upsert_batch(batch, embedder, store)
-                batch = []
-    if batch:
-        total += _upsert_batch(batch, embedder, store)
+    for offset in range(0, len(chunks), args.batch_size):
+        total += _upsert_batch(chunks[offset : offset + args.batch_size], embedder, store)
     print(f"indexed {total} chunks into {runtime.store.collection}")
+
+
+def _chunk_files(paths: list[Path]) -> tuple[Path, ...]:
+    files: list[Path] = []
+    for path in paths:
+        if path.is_dir():
+            files.extend(sorted(path.glob("*.jsonl")))
+        elif path.is_file():
+            files.append(path)
+        else:
+            raise ValueError(f"chunk path does not exist: {path}")
+    if not files:
+        raise ValueError("no JSONL chunk files found")
+    return tuple(files)
 
 
 def _upsert_batch(chunks: list[Chunk], embedder: BgeM3Embedder, store: QdrantStore) -> int:

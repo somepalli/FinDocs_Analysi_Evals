@@ -1,0 +1,8 @@
+backend: ollama
+base_url: http://localhost:11434/v1
+model_id: gemma3:4b
+revision: a2af6cc3eb7fa8be8504abaf9b04e88f17a119ec3f04a3addf55f92841195f5a
+temperature: 0.0
+seed: 17
+max_tokens: 1024
+timeout_seconds: 120

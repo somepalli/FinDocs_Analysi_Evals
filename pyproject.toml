@@ -30,6 +30,7 @@ dev = [
 findociq-ingest = "findociq.ingest.cli:main"
 findociq-retrieval = "findociq.retrieve.cli:main"
 findociq-evals = "evals.run:main"
+findociq-reason = "findociq.reason.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/findociq", "evals"]

@@ -12,6 +12,7 @@ from typing import Any, Protocol
 class RerankerConfig:
     model_id: str
     revision: str
+    snapshot_dir: str | None = None
     use_fp16: bool = True
 
     def __post_init__(self) -> None:
@@ -42,7 +43,7 @@ class BgeReranker:
         output = self._get_model().compute_score(
             [[query, document] for document in documents], normalize=True
         )
-        if isinstance(output, (float, int)):
+        if isinstance(output, float | int):
             output = [output]
         scores = tuple(float(score) for score in output)
         if len(scores) != len(documents):
@@ -62,6 +63,7 @@ class BgeReranker:
                 snapshot_download(
                     repo_id=self.config.model_id,
                     revision=self.config.revision,
+                    local_dir=self.config.snapshot_dir,
                 )
             )
             self._model = FlagReranker(str(snapshot), use_fp16=self.config.use_fp16)

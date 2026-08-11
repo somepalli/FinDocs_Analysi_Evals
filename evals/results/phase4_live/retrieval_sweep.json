@@ -1,0 +1,83 @@
+{
+  "dataset_sha256": "56b8cc52001dbf3f9b000bd995ac81e670eb14b8c43ff0af306735044deb98fa",
+  "results": [
+    {
+      "strategy": "naive",
+      "config_hash": "32038fce3a56b5aeb8478cb30afbfc3520aae3d07a7cd111a58dca837e92107f",
+      "backend": "live",
+      "retrieval": {
+        "query_count": 5,
+        "recall_at_1": 0.6,
+        "recall_at_5": 0.8,
+        "recall_at_8": 1.0,
+        "mrr": 0.6952380952380952,
+        "ndcg_at_8": 0.7666666666666667
+      },
+      "answer": null
+    },
+    {
+      "strategy": "hybrid",
+      "config_hash": "700f8a4314feed6e002cb09c59c023042ba7534d836ddf52d3ea31d34c8bfbf0",
+      "backend": "live",
+      "retrieval": {
+        "query_count": 5,
+        "recall_at_1": 0.6,
+        "recall_at_5": 0.8,
+        "recall_at_8": 1.0,
+        "mrr": 0.6916666666666667,
+        "ndcg_at_8": 0.7630929753571458
+      },
+      "answer": null
+    },
+    {
+      "strategy": "hybrid_rerank",
+      "config_hash": "ae26097a530cb77127b8dcf0bc6579f8e5839d23b1b2cb5bb40cb71f829d3b7f",
+      "backend": "live",
+      "retrieval": {
+        "query_count": 5,
+        "recall_at_1": 0.8,
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "mrr": 0.8666666666666666,
+        "ndcg_at_8": 0.9
+      },
+      "answer": null
+    }
+  ],
+  "reasoning": [
+    {
+      "mode": "single_pass",
+      "config_hash": "dc04ee8de100d59bf5b57b66f14e0dcbf2f62385792d343ecfeba2964a55a1ae",
+      "backend": "live",
+      "model_id": "gemma3:4b",
+      "model_revision": "a2af6cc3eb7fa8be8504abaf9b04e88f17a119ec3f04a3addf55f92841195f5a",
+      "retrieval_strategy": "hybrid_rerank",
+      "answer": {
+        "answer_count": 5,
+        "exact_match_accuracy": 1.0,
+        "numeric_exact_accuracy": 1.0,
+        "text_exact_accuracy": null,
+        "citation_precision": 0.8,
+        "citation_recall": 0.8,
+        "citation_f1": 0.8
+      }
+    },
+    {
+      "mode": "two_pass",
+      "config_hash": "baa2627d4037d590b60824ddb88d2e34e0ba9a1e745fa828cc0ed3e315842e7c",
+      "backend": "live",
+      "model_id": "gemma3:4b",
+      "model_revision": "a2af6cc3eb7fa8be8504abaf9b04e88f17a119ec3f04a3addf55f92841195f5a",
+      "retrieval_strategy": "hybrid_rerank",
+      "answer": {
+        "answer_count": 5,
+        "exact_match_accuracy": 0.4,
+        "numeric_exact_accuracy": 0.4,
+        "text_exact_accuracy": null,
+        "citation_precision": 0.2,
+        "citation_recall": 0.2,
+        "citation_f1": 0.2
+      }
+    }
+  ]
+}

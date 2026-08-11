@@ -89,10 +89,13 @@ class RetrievalPipeline:
         self.embedder = embedder
         self.store = store
         self.reranker = reranker
+        self._cache: dict[str, tuple[RetrievalHit, ...]] = {}
 
     def retrieve(self, query: str) -> tuple[RetrievalHit, ...]:
         if not query.strip():
             raise ValueError("query must not be blank")
+        if query in self._cache:
+            return self._cache[query]
         embedding = self.embedder.encode_query(query)
         if self.config.mode == "dense":
             hits = self.store.dense_search(embedding, self.config.retrieve_top_k)
@@ -104,8 +107,11 @@ class RetrievalPipeline:
                 rrf_k=self.config.rrf_k,
             )
         if self.reranker is None or self.config.rerank_top_k is None:
-            return self._normalize_ranks(hits)
-        return self._rerank(query, hits)
+            results = self._normalize_ranks(hits)
+        else:
+            results = self._rerank(query, hits)
+        self._cache[query] = results
+        return results
 
     def _rerank(self, query: str, hits: tuple[RetrievalHit, ...]) -> tuple[RetrievalHit, ...]:
         scores = self.reranker.score(query, [hit.chunk.text for hit in hits])

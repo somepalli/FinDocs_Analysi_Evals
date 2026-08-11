@@ -51,6 +51,10 @@ class AnswerPrediction(BaseModel):
     citations: tuple[CitationTarget, ...] = ()
 
 
+class ReasoningPrediction(AnswerPrediction):
+    error: str | None = None
+
+
 class RetrievalMetrics(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -84,8 +88,21 @@ class StrategyResult(BaseModel):
     answer: AnswerMetrics | None = None
 
 
+class ReasoningResult(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    mode: str
+    config_hash: str
+    backend: Literal["live", "fixture"]
+    model_id: str | None = None
+    model_revision: str | None = None
+    retrieval_strategy: str | None = None
+    answer: AnswerMetrics
+
+
 class SweepResult(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     dataset_sha256: str
     results: tuple[StrategyResult, ...]
+    reasoning: tuple[ReasoningResult, ...] = ()

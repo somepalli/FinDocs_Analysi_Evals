@@ -1,0 +1,133 @@
+{
+  "single_pass": {
+    "desai-revenue-fy25": {
+      "answer": "DBL’s revenue remained largely flat at Rs. 1,690.1 crore (Rs. 1,689.3 crore in FY2024) owing to 1% de-growth in the beedi division on account of limited availability of the key raw material, tendu leaves.",
+      "citations": [
+        {
+          "document_id": "062c1c21bfcf3882cec5a9805bec4310a36062cca454681219195efeaff3271e",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 369.739990234375,
+            "x1": 554.4461669921875,
+            "y1": 492.03997802734375
+          }
+        }
+      ],
+      "error": null
+    },
+    "kids-clinic-revenue-fy25": {
+      "answer": "1,485.6",
+      "citations": [
+        {
+          "document_id": "0f6d0f8bd72d42d86dd5142ce766c1caafd9b0ef9b817e2a22cca0e1f546ede3",
+          "page_number": 3,
+          "bbox": {
+            "x0": 43.53230813833383,
+            "y0": 602.9684307391827,
+            "x1": 551.97998046875,
+            "y1": 706.0256783621652
+          }
+        }
+      ],
+      "error": null
+    },
+    "mawana-revenue-growth-fy25": {
+      "answer": "7%",
+      "citations": [
+        {
+          "document_id": "d5af328a73423be251138bf2b586b167bc003139a378a2ec7699916844de3c45",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 309.1399841308594,
+            "x1": 554.470947265625,
+            "y1": 389.2999877929687
+          }
+        }
+      ],
+      "error": null
+    },
+    "vivriti-pat-fy25": {
+      "answer": "The consolidated profit after tax did Rs. 324 crore in FY2025 according to evidence citation [{\"document_id\":\"8b79bcfa32c75940466b6cad21c912afa530dbae7c2155f3ad289bf440617588\",\"page_number\":1,\"bbox\":{\"x0\":43.20000076293945,\"y0\":383.6300048828125,\"x1\":554.4603881835938,\"y1\":520.8399658203125}}]}",
+      "citations": [
+        {
+          "document_id": "8b79bcfa32c75940466b6cad21c912afa530dbae7c2155f3ad289bf440617588",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 383.6300048828125,
+            "x1": 554.4603881835938,
+            "y1": 520.8399658203125
+          }
+        }
+      ],
+      "error": null
+    },
+    "teecl-revenue-fy25": {
+      "answer": "The revenues grew 51% to Rs. 2,268.7 crore in FY2025 over FY2024",
+      "citations": [
+        {
+          "document_id": "b09e6ecec18f0e3e44aecfc31ac3743f4e7dbc02c4b9b9f1ad041c0dcab98d1e",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 457.5799865722656,
+            "x1": 554.4710083007812,
+            "y1": 509.6799621582031
+          }
+        }
+      ],
+      "error": null
+    }
+  },
+  "two_pass": {
+    "desai-revenue-fy25": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 1 validation error for Pass1Extraction\nquestion\n  Field required [type=missing, input_value={'figures': [{'label': 'r...': 492.039990234375}}}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    },
+    "kids-clinic-revenue-fy25": {
+      "answer": "1,485.6",
+      "citations": [
+        {
+          "document_id": "0f6d0f8bd72d42d86dd5142ce766c1caafd9b0ef9b817e2a22cca0e1f546ede3",
+          "page_number": 3,
+          "bbox": {
+            "x0": 43.53230813833383,
+            "y0": 602.9684307391827,
+            "x1": 551.97998046875,
+            "y1": 706.0256783621652
+          }
+        }
+      ],
+      "error": null
+    },
+    "mawana-revenue-growth-fy25": {
+      "answer": "7%",
+      "citations": [
+        {
+          "document_id": "d5af328a73423be251138bf2b586b167bc003139a378a2ec7699916844de3c45",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 309.1399841308594,
+            "x1": 554.470947265625,
+            "y1": 389.2999877929687
+          }
+        }
+      ],
+      "error": null
+    },
+    "vivriti-pat-fy25": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 1 validation error for Pass1Extraction\nfigures.0.citation\n  Field required [type=missing, input_value={'label': 'consolidated p... '324', 'unit': 'crore'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    },
+    "teecl-revenue-fy25": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 3 validation errors for Pass1Extraction\nquestion\n  Field required [type=missing, input_value={'figures': [{'label': 'r...', 'period': 'FY2025'}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing\nfigures.0.citation\n  Field required [type=missing, input_value={'label': 'revenues', 'va...re', 'period': 'FY2025'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing\nfigures.1.citation\n  Field required [type=missing, input_value={'label': 'revenues', 'va...re', 'period': 'FY2025'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    }
+  }
+}

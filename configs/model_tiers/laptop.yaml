@@ -1,6 +1,6 @@
 name: laptop
 model_id: google/gemma-3-4b-it
-revision: pinned-before-first-eval
+revision: 093f9f388b31de276ce2de164bdc2081324b9767
 quantization: awq-int4
 temperature: 0.0
 seed: 17

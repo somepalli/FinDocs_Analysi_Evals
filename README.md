@@ -12,11 +12,12 @@ harness lands.
 | 1. Ingestion | Complete | 15 filings, 1,236 chunks, 5 visual bbox checks |
 | 2. Retrieval | Implemented | Dense, hybrid RRF, and hybrid RRF + BGE rerank |
 | 3. Evaluation | Implemented | Separate retrieval and answer score tables |
-| 4. Two-pass reasoning | Not started | Single-pass versus two-pass results |
+| 4. Two-pass reasoning | Live-smoke validated | Single-pass versus two-pass results |
 | 5. Observability | Not started | Per-query latency and hit-rate |
 | 6. Cross-lingual | Not started | Results split by query language |
 
-No benchmark claim is made before a reproducible corpus-backed eval exists.
+The five-question corpus-backed smoke run is a pipeline validation, not a
+production benchmark claim.
 
 ## Phase 1 quick start
 
@@ -67,6 +68,55 @@ It writes separate retrieval and answer tables to `evals/results/`. Add
 `--live` to sweep local Qdrant/BGE results instead of the explicitly labeled
 fixture records. Retrieval metrics are never blended with answer or citation
 metrics.
+
+## Phase 4 reasoning
+
+Reasoning is explicitly single-pass or two-pass. Pass 1 extracts figures with
+page/bbox provenance; pass 2 receives only that structured extraction, never
+the raw retrieval chunks. Both paths require at least one grounded citation.
+The local OpenAI-compatible Gemma client is configured in
+`configs/reasoning/gemma_local.yaml` and uses temperature 0 with a fixed seed.
+The checked-in laptop configuration uses Ollama's open-weight `gemma3:4b` and
+verifies its full local content digest before the first model call.
+
+```powershell
+ollama pull gemma3:4b
+uv sync --extra retrieval --extra dev
+uv run findociq-reason "What was revenue in FY25?" `
+  --retrieval-hits retrieval_hits.json `
+  --pipeline-config configs/pipeline/two_pass.yaml
+```
+
+The fixture evaluation compares both modes with `--reasoning-predictions`.
+For a live corpus-backed run, start Qdrant, index the audited corpus once, and
+run retrieval plus both reasoning modes:
+
+```powershell
+docker compose up -d qdrant
+uv run findociq-retrieval index corpus/phase1_chunks
+uv run python -m evals.run --sweep --live --live-reasoning `
+  --dataset evals/datasets/phase4_corpus.jsonl `
+  --results-dir evals/results/phase4_live
+```
+
+The reasoning table remains separate from retrieval quality. Live prediction
+records retain `(document, page, bbox)` citations and are written beside the
+summary results.
+
+### Current live smoke result
+
+The pinned five-question English run in `evals/results/phase4_live/` produced:
+
+| Pipeline | Numeric exact | Citation F1 |
+|---|---:|---:|
+| Single pass | 1.000 | 0.800 |
+| Two pass | 0.400 | 0.200 |
+
+Hybrid reranking improved retrieval Recall@1 from `0.600` to `0.800` and
+reached Recall@5 of `1.000`. Three two-pass cases are deliberately scored as
+failures because Gemma omitted required pass-1 fields; the associated errors
+are preserved in `reasoning_predictions.json` instead of being hidden or
+silently repaired.
 
 ## Provenance contract
 

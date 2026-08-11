@@ -17,3 +17,10 @@ Dataset SHA-256: `2a557a4fa9ad3b18cedb46ef1c0fd0177c80374f06c57f26792fe7367030c5
 | naive | 2 | 0.500 | 0.500 | - | 1.000 | 1.000 | 1.000 |
 | hybrid | 2 | 1.000 | 1.000 | - | 1.000 | 1.000 | 1.000 |
 | hybrid_rerank | 2 | 1.000 | 1.000 | - | 1.000 | 1.000 | 1.000 |
+
+## Reasoning comparison
+
+| Mode | Backend | Model | Retrieval | Answers | Exact | Numeric exact | Citation F1 |
+|---|---|---|---|---:|---:|---:|---:|
+| single_pass | fixture | - | - | 2 | 0.500 | 0.500 | 1.000 |
+| two_pass | fixture | - | - | 2 | 1.000 | 1.000 | 1.000 |
