@@ -41,9 +41,10 @@ class LayoutAwareChunker:
             if block.block_type is BlockType.TABLE:
                 table_chunk = self._table_chunk(blocks, index)
                 if self._is_continuation(table_chunk) and last_table_position is not None:
-                    previous = chunks[last_table_position]
+                    position = int(last_table_position)
+                    previous = chunks[position]
                     if isinstance(previous, TableChunk):
-                        chunks[last_table_position] = self._merge_table_parts(previous, table_chunk)
+                        chunks[position] = self._merge_table_parts(previous, table_chunk)
                         continue
                 chunks.append(table_chunk)
                 last_table_position = len(chunks) - 1
