@@ -16,6 +16,9 @@ from urllib.request import Request, urlopen
 
 import yaml
 
+from findociq.observability.recorder import TraceObserver
+from findociq.observability.schema import TraceContext
+
 
 @dataclass(frozen=True, slots=True)
 class GenerationConfig:
@@ -49,46 +52,74 @@ class GenerationConfig:
 
 
 class GenerationClient(Protocol):
-    def complete(self, prompt: str) -> str: ...
+    def complete(
+        self,
+        prompt: str,
+        *,
+        trace_context: TraceContext | None = None,
+        stage: str = "generation",
+    ) -> str: ...
 
 
 class LocalGemmaClient:
     """Minimal deterministic client for a local OpenAI-compatible runtime."""
 
-    def __init__(self, config: GenerationConfig) -> None:
+    def __init__(self, config: GenerationConfig, observer: TraceObserver | None = None) -> None:
         self.config = config
+        self.observer = observer or TraceObserver()
         self._revision_validated = False
 
-    def complete(self, prompt: str) -> str:
+    def complete(
+        self,
+        prompt: str,
+        *,
+        trace_context: TraceContext | None = None,
+        stage: str = "generation",
+    ) -> str:
         if not prompt.strip():
             raise ValueError("generation prompt must not be blank")
-        self._validate_revision()
-        endpoint = self.config.base_url.rstrip("/") + "/chat/completions"
-        payload = {
-            "model": self.config.model_id,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": self.config.temperature,
-            "seed": self.config.seed,
-            "max_tokens": self.config.max_tokens,
-            "response_format": {"type": "json_object"},
-        }
-        request = Request(
-            endpoint,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        try:
-            with urlopen(request, timeout=self.config.timeout_seconds) as response:  # noqa: S310
-                result = json.loads(response.read().decode("utf-8"))
-        except (HTTPError, URLError, TimeoutError) as error:
-            raise RuntimeError(f"local Gemma generation failed: {error}") from error
-        try:
-            content = result["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError) as error:
-            raise RuntimeError("local Gemma response did not contain message content") from error
-        if not isinstance(content, str) or not content.strip():
-            raise RuntimeError("local Gemma returned empty message content")
+        context = trace_context or TraceContext.for_query(prompt, operation="generation")
+        with self.observer.span(
+            context,
+            stage,
+            {
+                "backend": self.config.backend,
+                "model_id": self.config.model_id,
+                "model_revision": self.config.revision,
+                "prompt_characters": len(prompt),
+                "max_tokens": self.config.max_tokens,
+            },
+        ) as attributes:
+            self._validate_revision()
+            endpoint = self.config.base_url.rstrip("/") + "/chat/completions"
+            payload = {
+                "model": self.config.model_id,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": self.config.temperature,
+                "seed": self.config.seed,
+                "max_tokens": self.config.max_tokens,
+                "response_format": {"type": "json_object"},
+            }
+            request = Request(
+                endpoint,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urlopen(request, timeout=self.config.timeout_seconds) as response:  # noqa: S310
+                    result = json.loads(response.read().decode("utf-8"))
+            except (HTTPError, URLError, TimeoutError) as error:
+                raise RuntimeError(f"local Gemma generation failed: {error}") from error
+            try:
+                content = result["choices"][0]["message"]["content"]
+            except (KeyError, IndexError, TypeError) as error:
+                raise RuntimeError(
+                    "local Gemma response did not contain message content"
+                ) from error
+            if not isinstance(content, str) or not content.strip():
+                raise RuntimeError("local Gemma returned empty message content")
+            attributes["response_characters"] = len(content)
         return content
 
     def _validate_revision(self) -> None:

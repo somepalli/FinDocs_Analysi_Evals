@@ -11,6 +11,9 @@ from pydantic import TypeAdapter
 from findociq.index.embedder import BgeM3Embedder
 from findociq.index.store import IndexRecord, QdrantStore
 from findociq.ingest.schema import Chunk
+from findociq.observability.aggregate import aggregate_traces, write_observability_report
+from findociq.observability.recorder import build_observer, load_trace_events
+from findociq.observability.schema import ObservabilityConfig
 from findociq.retrieve.pipeline import RetrievalRuntimeConfig, build_local_pipeline
 
 CHUNK_ADAPTER = TypeAdapter(Chunk)
@@ -32,6 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     query.add_argument("--index-config", type=Path, default=Path("configs/index/default.yaml"))
     query.add_argument("--config-dir", type=Path, default=Path("configs/retrieval"))
+    query.add_argument("--observability-config", type=Path)
     return parser
 
 
@@ -97,9 +101,20 @@ def query_chunks(args: argparse.Namespace) -> None:
         args.index_config,
         args.config_dir / f"{args.strategy}.yaml",
     )
-    pipeline = build_local_pipeline(runtime)
+    observability = (
+        ObservabilityConfig.from_yaml(args.observability_config)
+        if args.observability_config
+        else ObservabilityConfig()
+    )
+    observer = build_observer(observability, reset=True)
+    pipeline = build_local_pipeline(runtime, observer)
     payload = [hit.model_dump(mode="json") for hit in pipeline.retrieve(args.query)]
     print(json.dumps(payload, indent=2, ensure_ascii=False))
+    if observability.enabled:
+        write_observability_report(
+            aggregate_traces(load_trace_events(observability.trace_path)),
+            observability.trace_path.parent,
+        )
 
 
 if __name__ == "__main__":

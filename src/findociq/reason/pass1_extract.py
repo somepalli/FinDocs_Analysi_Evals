@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+from findociq.observability.recorder import TraceObserver
+from findociq.observability.schema import TraceContext
 from findociq.reason.generation import GenerationClient
 from findociq.reason.prompting import load_prompt, render_evidence, substitute
 from findociq.reason.schema import (
@@ -15,10 +17,17 @@ from findociq.retrieve.schema import RetrievalHit
 
 
 class Pass1Extractor:
-    def __init__(self, client: GenerationClient) -> None:
+    def __init__(self, client: GenerationClient, observer: TraceObserver | None = None) -> None:
         self.client = client
+        self.observer = observer or TraceObserver()
 
-    def extract(self, question: str, hits: tuple[RetrievalHit, ...]) -> Pass1Extraction:
+    def extract(
+        self,
+        question: str,
+        hits: tuple[RetrievalHit, ...],
+        *,
+        trace_context: TraceContext | None = None,
+    ) -> Pass1Extraction:
         if not question.strip():
             raise ValueError("question must not be blank")
         if not hits:
@@ -28,9 +37,17 @@ class Pass1Extractor:
             QUESTION=question,
             EVIDENCE=render_evidence(hits),
         )
-        raw = self.client.complete(prompt)
+        raw = self.client.complete(
+            prompt, trace_context=trace_context, stage="generation.pass1"
+        )
         extraction = Pass1Extraction.model_validate(_parse_json(raw))
-        return self._ground_citations(extraction, hits)
+        context = trace_context or TraceContext.for_query(question, operation="reasoning:pass1")
+        with self.observer.span(
+            context,
+            "citation_validation",
+            {"mode": "pass1", "citation_count": len(extraction.figures)},
+        ):
+            return self._ground_citations(extraction, hits)
 
     @staticmethod
     def _ground_citations(

@@ -10,6 +10,8 @@ import yaml
 
 from findociq.index.embedder import BgeM3Embedder, Embedder, EmbeddingConfig
 from findociq.index.store import QdrantStore, QdrantStoreConfig, RetrievalStore
+from findociq.observability.recorder import TraceObserver
+from findociq.observability.schema import TraceContext
 from findociq.retrieve.rerank import BgeReranker, Reranker, RerankerConfig
 from findociq.retrieve.schema import RetrievalHit
 
@@ -82,6 +84,7 @@ class RetrievalPipeline:
         embedder: Embedder,
         store: RetrievalStore,
         reranker: Reranker | None = None,
+        observer: TraceObserver | None = None,
     ) -> None:
         if config.rerank_top_k is not None and reranker is None:
             raise ValueError("a reranker is required by this strategy")
@@ -89,29 +92,57 @@ class RetrievalPipeline:
         self.embedder = embedder
         self.store = store
         self.reranker = reranker
+        self.observer = observer or TraceObserver()
         self._cache: dict[str, tuple[RetrievalHit, ...]] = {}
 
-    def retrieve(self, query: str) -> tuple[RetrievalHit, ...]:
+    def retrieve(
+        self, query: str, *, trace_context: TraceContext | None = None
+    ) -> tuple[RetrievalHit, ...]:
         if not query.strip():
             raise ValueError("query must not be blank")
-        if query in self._cache:
-            return self._cache[query]
-        embedding = self.embedder.encode_query(query)
-        if self.config.mode == "dense":
-            hits = self.store.dense_search(embedding, self.config.retrieve_top_k)
-        else:
-            hits = self.store.hybrid_search(
-                embedding,
-                limit=self.config.retrieve_top_k,
-                prefetch_limit=self.config.prefetch_top_k,
-                rrf_k=self.config.rrf_k,
-            )
-        if self.reranker is None or self.config.rerank_top_k is None:
-            results = self._normalize_ranks(hits)
-        else:
-            results = self._rerank(query, hits)
-        self._cache[query] = results
-        return results
+        context = trace_context or TraceContext.for_query(
+            query, operation=f"retrieval:{self.config.name}"
+        )
+        with self.observer.span(
+            context,
+            "retrieval.total",
+            {"strategy": self.config.name, "mode": self.config.mode},
+        ) as total_attributes:
+            cached = self._cache.get(query)
+            total_attributes["cache_hit"] = cached is not None
+            if cached is not None:
+                total_attributes["hit_count"] = len(cached)
+                return cached
+            with self.observer.span(context, "retrieval.embedding"):
+                embedding = self.embedder.encode_query(query)
+            with self.observer.span(
+                context,
+                "retrieval.search",
+                {"mode": self.config.mode, "requested_hits": self.config.retrieve_top_k},
+            ) as search_attributes:
+                if self.config.mode == "dense":
+                    hits = self.store.dense_search(embedding, self.config.retrieve_top_k)
+                else:
+                    hits = self.store.hybrid_search(
+                        embedding,
+                        limit=self.config.retrieve_top_k,
+                        prefetch_limit=self.config.prefetch_top_k,
+                        rrf_k=self.config.rrf_k,
+                    )
+                search_attributes["hit_count"] = len(hits)
+            if self.reranker is None or self.config.rerank_top_k is None:
+                results = self._normalize_ranks(hits)
+            else:
+                with self.observer.span(
+                    context,
+                    "retrieval.rerank",
+                    {"candidate_count": len(hits)},
+                ) as rerank_attributes:
+                    results = self._rerank(query, hits)
+                    rerank_attributes["hit_count"] = len(results)
+            total_attributes["hit_count"] = len(results)
+            self._cache[query] = results
+            return results
 
     def _rerank(self, query: str, hits: tuple[RetrievalHit, ...]) -> tuple[RetrievalHit, ...]:
         scores = self.reranker.score(query, [hit.chunk.text for hit in hits])
@@ -136,11 +167,13 @@ class RetrievalPipeline:
         return tuple(hit.model_copy(update={"rank": rank}) for rank, hit in enumerate(hits, 1))
 
 
-def build_local_pipeline(runtime: RetrievalRuntimeConfig) -> RetrievalPipeline:
+def build_local_pipeline(
+    runtime: RetrievalRuntimeConfig, observer: TraceObserver | None = None
+) -> RetrievalPipeline:
     embedder = BgeM3Embedder(runtime.embedding)
     store = QdrantStore(runtime.store)
     reranker = BgeReranker(runtime.reranker) if runtime.strategy.rerank_top_k else None
-    return RetrievalPipeline(runtime.strategy, embedder, store, reranker)
+    return RetrievalPipeline(runtime.strategy, embedder, store, reranker, observer)
 
 
 def _mapping(value: Any, section: str) -> dict[str, Any]:

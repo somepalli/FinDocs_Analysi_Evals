@@ -71,3 +71,17 @@ runtime. Each reasoning config hash covers the reasoning pipeline, generation
 runtime, retrieval strategy, and index configuration. The generated
 `reasoning_predictions.json` preserves the complete page/bbox citations used
 for scoring.
+
+## Operational observability
+
+Passing `--observability-config configs/observability/local.yaml` enables the
+local JSONL recorder. Each immutable span contains a deterministic `run_id`,
+operation, query SHA-256, optional question/config/dataset identifiers, stage,
+status, duration, structural attributes, and exception type. It does not
+contain raw questions, prompts, responses, answers, or document text.
+
+`observability_summary.json` and its Markdown rendering report run/span error
+counts, query-cache hit rate, non-empty retrieval rate, and per-stage p50/p95
+latency. These operational measurements are deliberately not fields in
+`RetrievalMetrics` or `AnswerMetrics`; retrieval and answer quality remain
+separately scored.

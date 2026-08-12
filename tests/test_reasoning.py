@@ -6,6 +6,8 @@ import pytest
 from evals.run import run_live_reasoning
 from evals.schema import AnswerExpectation, CitationTarget, EvalCase
 from findociq.ingest.schema import BoundingBox, Provenance, TextChunk
+from findociq.observability.recorder import InMemoryRecorder, TraceObserver
+from findociq.observability.schema import TraceContext
 from findociq.reason.generation import GenerationConfig
 from findociq.reason.pass1_extract import Pass1Extractor
 from findociq.reason.pipeline import ReasoningPipeline, ReasoningPipelineConfig
@@ -48,9 +50,18 @@ class FakeClient:
     def __init__(self, *responses: str) -> None:
         self.responses = list(responses)
         self.prompts: list[str] = []
+        self.stages: list[str] = []
 
-    def complete(self, prompt: str) -> str:
+    def complete(
+        self,
+        prompt: str,
+        *,
+        trace_context: TraceContext | None = None,
+        stage: str = "generation",
+    ) -> str:
+        del trace_context
         self.prompts.append(prompt)
+        self.stages.append(stage)
         return self.responses.pop(0)
 
 
@@ -95,9 +106,11 @@ def test_generation_config_is_local_deterministic_and_yaml_backed() -> None:
 
 def test_two_pass_extracts_then_reasons_only_over_structured_json() -> None:
     client = FakeClient(extraction_json(), answer_json())
+    recorder = InMemoryRecorder()
     pipeline = ReasoningPipeline(
         ReasoningPipelineConfig.from_yaml(ROOT / "configs/pipeline/two_pass.yaml"),
         client,
+        TraceObserver(recorder),
     )
     result = pipeline.run("What was revenue?", (retrieval_hit(),))
     assert result.mode == "two_pass"
@@ -107,6 +120,13 @@ def test_two_pass_extracts_then_reasons_only_over_structured_json() -> None:
     assert "Revenue was INR 1,240" in client.prompts[0]
     assert "Revenue was INR 1,240" not in client.prompts[1]
     assert '"figures"' in client.prompts[1]
+    assert client.stages == ["generation.pass1", "generation.pass2"]
+    assert {event.stage for event in recorder.events} == {
+        "reasoning.total",
+        "reasoning.pass1",
+        "reasoning.pass2",
+        "citation_validation",
+    }
 
 
 def test_single_pass_has_no_intermediate_extraction() -> None:
@@ -169,7 +189,10 @@ def test_pipeline_rejects_empty_evidence_before_model_call() -> None:
 
 def test_live_reasoning_scores_both_modes_and_records_model_revision() -> None:
     class FakeRetrievalPipeline:
-        def retrieve(self, _: str) -> tuple[RetrievalHit, ...]:
+        def retrieve(
+            self, _: str, *, trace_context: TraceContext | None = None
+        ) -> tuple[RetrievalHit, ...]:
+            del trace_context
             return (retrieval_hit(),)
 
     config = GenerationConfig(

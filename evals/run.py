@@ -29,6 +29,13 @@ from evals.scorers.answers import aggregate_answers
 from evals.scorers.retrieval import aggregate_retrieval
 from findociq.index.embedder import BgeM3Embedder
 from findociq.index.store import QdrantStore
+from findociq.observability.aggregate import aggregate_traces, write_observability_report
+from findociq.observability.recorder import (
+    TraceObserver,
+    build_observer,
+    load_trace_events,
+)
+from findociq.observability.schema import ObservabilityConfig, TraceContext
 from findociq.reason.generation import GenerationClient, GenerationConfig, LocalGemmaClient
 from findociq.reason.pipeline import ReasoningPipeline, ReasoningPipelineConfig
 from findociq.retrieve.pipeline import (
@@ -109,7 +116,14 @@ def run_sweep(
             if pipeline_factory is None:
                 pipeline_factory = _default_pipeline_factory(index_config_path)
             pipeline = pipeline_factory(strategy, config_path)
-            predictions = _retrieve_live(cases, pipeline)
+            strategy_hash = file_hash(index_config_path, config_path)
+            predictions = _retrieve_live(
+                cases,
+                pipeline,
+                strategy=strategy,
+                config_hash=strategy_hash,
+                dataset_sha256=dataset_sha256,
+            )
             backend = "live"
         answer = None
         if answer_records is not None and strategy in answer_records:
@@ -152,8 +166,24 @@ def run_live_reasoning(
     reasoning_config_dir: Path,
     retrieval_config_path: Path,
     index_config_path: Path,
+    observer: TraceObserver | None = None,
+    dataset_sha256: str | None = None,
 ) -> tuple[tuple[ReasoningResult, ...], dict[str, dict[str, ReasoningPrediction]]]:
-    hits = {case.question_id: retrieval_pipeline.retrieve(case.question) for case in cases}
+    active_observer = observer or TraceObserver()
+    retrieval_hash = file_hash(index_config_path, retrieval_config_path)
+    hits = {
+        case.question_id: retrieval_pipeline.retrieve(
+            case.question,
+            trace_context=TraceContext.for_query(
+                case.question,
+                operation=f"reasoning_evidence:{retrieval_strategy}",
+                question_id=case.question_id,
+                config_hash=retrieval_hash,
+                dataset_sha256=dataset_sha256,
+            ),
+        )
+        for case in cases
+    }
     results: list[ReasoningResult] = []
     all_predictions: dict[str, dict[str, ReasoningPrediction]] = {}
     for mode in ("single_pass", "two_pass"):
@@ -161,11 +191,29 @@ def run_live_reasoning(
         pipeline = ReasoningPipeline(
             ReasoningPipelineConfig.from_yaml(pipeline_path),
             generation_client,
+            active_observer,
+        )
+        reasoning_hash = file_hash(
+            pipeline_path,
+            generation_config_path,
+            retrieval_config_path,
+            index_config_path,
         )
         predictions: dict[str, ReasoningPrediction] = {}
         for case in cases:
+            trace_context = TraceContext.for_query(
+                case.question,
+                operation=f"reasoning:{mode}",
+                question_id=case.question_id,
+                config_hash=reasoning_hash,
+                dataset_sha256=dataset_sha256,
+            )
             try:
-                run = pipeline.run(case.question, hits[case.question_id])
+                run = pipeline.run(
+                    case.question,
+                    hits[case.question_id],
+                    trace_context=trace_context,
+                )
                 prediction = ReasoningPrediction(
                     answer=run.answer.answer,
                     citations=tuple(
@@ -184,12 +232,7 @@ def run_live_reasoning(
         results.append(
             ReasoningResult(
                 mode=mode,
-                config_hash=file_hash(
-                    pipeline_path,
-                    generation_config_path,
-                    retrieval_config_path,
-                    index_config_path,
-                ),
+                config_hash=reasoning_hash,
                 backend="live",
                 model_id=generation_config.model_id,
                 model_revision=generation_config.revision,
@@ -303,8 +346,16 @@ def main() -> None:
         raise SystemExit("--live-reasoning requires --live")
     if args.live_reasoning and reasoning is not None:
         raise SystemExit("use either --live-reasoning or --reasoning-predictions")
+    observability_config = (
+        ObservabilityConfig.from_yaml(args.observability_config)
+        if args.observability_config
+        else ObservabilityConfig()
+    )
+    observer = build_observer(observability_config, reset=True)
     strategy_paths = {name: args.config_dir / f"{name}.yaml" for name in STRATEGIES}
-    pipeline_factory = _default_pipeline_factory(args.index_config) if args.live else None
+    pipeline_factory = (
+        _default_pipeline_factory(args.index_config, observer) if args.live else None
+    )
     result = run_sweep(
         cases,
         strategy_paths=strategy_paths,
@@ -328,12 +379,14 @@ def main() -> None:
                 retrieval_config,
             ),
             retrieval_strategy=args.reasoning_retrieval_strategy,
-            generation_client=LocalGemmaClient(generation_config),
+            generation_client=LocalGemmaClient(generation_config, observer),
             generation_config=generation_config,
             generation_config_path=args.generation_config,
             reasoning_config_dir=args.reasoning_config_dir,
             retrieval_config_path=retrieval_config,
             index_config_path=args.index_config,
+            observer=observer,
+            dataset_sha256=file_hash(args.dataset),
         )
         result = result.model_copy(update={"reasoning": live_reasoning})
     json_path, markdown_path = write_results(result, args.results_dir)
@@ -341,6 +394,11 @@ def main() -> None:
     print(f"wrote {markdown_path}")
     if live_predictions is not None:
         print(f"wrote {write_reasoning_predictions(live_predictions, args.results_dir)}")
+    if observability_config.enabled:
+        summary = aggregate_traces(load_trace_events(observability_config.trace_path))
+        summary_paths = write_observability_report(summary, args.results_dir)
+        print(f"wrote {summary_paths[0]}")
+        print(f"wrote {summary_paths[1]}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -370,6 +428,11 @@ def parse_args() -> argparse.Namespace:
         choices=STRATEGIES,
         default="hybrid_rerank",
     )
+    parser.add_argument(
+        "--observability-config",
+        type=Path,
+        help="enable typed local JSONL tracing with this YAML configuration",
+    )
     return parser.parse_args()
 
 
@@ -381,18 +444,34 @@ def file_hash(*paths: str | Path) -> str:
 
 
 def _retrieve_live(
-    cases: Iterable[EvalCase], pipeline: RetrievalPipeline
+    cases: Iterable[EvalCase],
+    pipeline: RetrievalPipeline,
+    *,
+    strategy: str,
+    config_hash: str,
+    dataset_sha256: str,
 ) -> dict[str, tuple[RetrievedItem, ...]]:
     return {
         case.question_id: tuple(
             RetrievedItem(chunk_id=hit.chunk.chunk_id, rank=hit.rank, score=hit.score)
-            for hit in pipeline.retrieve(case.question)
+            for hit in pipeline.retrieve(
+                case.question,
+                trace_context=TraceContext.for_query(
+                    case.question,
+                    operation=f"retrieval:{strategy}",
+                    question_id=case.question_id,
+                    config_hash=config_hash,
+                    dataset_sha256=dataset_sha256,
+                ),
+            )
         )
         for case in cases
     }
 
 
-def _default_pipeline_factory(index_path: Path) -> Callable[[str, Path], RetrievalPipeline]:
+def _default_pipeline_factory(
+    index_path: Path, observer: TraceObserver | None = None
+) -> Callable[[str, Path], RetrievalPipeline]:
     embedder: BgeM3Embedder | None = None
     store: QdrantStore | None = None
     reranker: BgeReranker | None = None
@@ -417,6 +496,7 @@ def _default_pipeline_factory(index_path: Path) -> Callable[[str, Path], Retriev
             embedder,
             store,
             selected_reranker,
+            observer,
         )
         return pipelines[strategy]
 

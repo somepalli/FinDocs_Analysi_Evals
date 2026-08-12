@@ -13,7 +13,7 @@ harness lands.
 | 2. Retrieval | Implemented | Dense, hybrid RRF, and hybrid RRF + BGE rerank |
 | 3. Evaluation | Implemented | Separate retrieval and answer score tables |
 | 4. Two-pass reasoning | Live-smoke validated | Single-pass versus two-pass results |
-| 5. Observability | Not started | Per-query latency and hit-rate |
+| 5. Observability | Live-smoke validated | Content-safe latency, cache and failure spans |
 | 6. Cross-lingual | Not started | Results split by query language |
 
 The five-question corpus-backed smoke run is a pipeline validation, not a
@@ -117,6 +117,37 @@ reached Recall@5 of `1.000`. Three two-pass cases are deliberately scored as
 failures because Gemma omitted required pass-1 fields; the associated errors
 are preserved in `reasoning_predictions.json` instead of being hidden or
 silently repaired.
+
+## Phase 5 observability
+
+Observability is local, typed, and disabled unless an observability YAML file
+is supplied. A trace records content-safe structural metadata for embedding,
+search, reranking, generation, reasoning passes, and citation validation. Raw
+questions, prompts, answers, and document text are never written; traces carry
+query hashes, configuration hashes, model revisions, counts, durations, and
+exception types.
+
+Enable tracing for the corpus-backed evaluation with:
+
+```powershell
+uv run python -m evals.run --sweep --live --live-reasoning `
+  --dataset evals/datasets/phase4_corpus.jsonl `
+  --results-dir evals/results/phase5_observability `
+  --observability-config configs/observability/local.yaml
+```
+
+The run writes `traces.jsonl`, `observability_summary.json`, and
+`observability_summary.md`. Operational cache/non-empty rates and p50/p95
+latencies remain separate from Recall@k, answer accuracy, and citation scores.
+The no-op recorder is the default, and tests verify that enabling tracing does
+not change retrieval rankings or returned provenance.
+
+The current five-question smoke run produced 98 spans across 30 operational
+runs, with a `0.250` query-cache hit rate and `1.000` non-empty retrieval rate.
+Three failed runs correspond to the already-known two-pass schema validation
+failures. Retrieval and answer scores were unchanged from Phase 4. These local
+latencies and rates validate instrumentation behavior; they are not production
+performance benchmarks.
 
 ## Provenance contract
 

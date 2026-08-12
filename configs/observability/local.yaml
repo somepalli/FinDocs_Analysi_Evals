@@ -1,0 +1,3 @@
+enabled: true
+trace_path: evals/results/phase5_observability/traces.jsonl
+capture_content: false
