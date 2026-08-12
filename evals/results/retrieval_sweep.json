@@ -21,7 +21,34 @@
         "citation_precision": 1.0,
         "citation_recall": 1.0,
         "citation_f1": 1.0
-      }
+      },
+      "retrieval_by_language": [
+        {
+          "language": "en",
+          "retrieval": {
+            "query_count": 2,
+            "recall_at_1": 0.5,
+            "recall_at_5": 1.0,
+            "recall_at_8": 1.0,
+            "mrr": 0.75,
+            "ndcg_at_8": 0.8154648767857288
+          }
+        }
+      ],
+      "answer_by_language": [
+        {
+          "language": "en",
+          "answer": {
+            "answer_count": 2,
+            "exact_match_accuracy": 0.5,
+            "numeric_exact_accuracy": 0.5,
+            "text_exact_accuracy": null,
+            "citation_precision": 1.0,
+            "citation_recall": 1.0,
+            "citation_f1": 1.0
+          }
+        }
+      ]
     },
     {
       "strategy": "hybrid",
@@ -43,7 +70,34 @@
         "citation_precision": 1.0,
         "citation_recall": 1.0,
         "citation_f1": 1.0
-      }
+      },
+      "retrieval_by_language": [
+        {
+          "language": "en",
+          "retrieval": {
+            "query_count": 2,
+            "recall_at_1": 1.0,
+            "recall_at_5": 1.0,
+            "recall_at_8": 1.0,
+            "mrr": 1.0,
+            "ndcg_at_8": 1.0
+          }
+        }
+      ],
+      "answer_by_language": [
+        {
+          "language": "en",
+          "answer": {
+            "answer_count": 2,
+            "exact_match_accuracy": 1.0,
+            "numeric_exact_accuracy": 1.0,
+            "text_exact_accuracy": null,
+            "citation_precision": 1.0,
+            "citation_recall": 1.0,
+            "citation_f1": 1.0
+          }
+        }
+      ]
     },
     {
       "strategy": "hybrid_rerank",
@@ -65,13 +119,40 @@
         "citation_precision": 1.0,
         "citation_recall": 1.0,
         "citation_f1": 1.0
-      }
+      },
+      "retrieval_by_language": [
+        {
+          "language": "en",
+          "retrieval": {
+            "query_count": 2,
+            "recall_at_1": 1.0,
+            "recall_at_5": 1.0,
+            "recall_at_8": 1.0,
+            "mrr": 1.0,
+            "ndcg_at_8": 1.0
+          }
+        }
+      ],
+      "answer_by_language": [
+        {
+          "language": "en",
+          "answer": {
+            "answer_count": 2,
+            "exact_match_accuracy": 1.0,
+            "numeric_exact_accuracy": 1.0,
+            "text_exact_accuracy": null,
+            "citation_precision": 1.0,
+            "citation_recall": 1.0,
+            "citation_f1": 1.0
+          }
+        }
+      ]
     }
   ],
   "reasoning": [
     {
       "mode": "single_pass",
-      "config_hash": "c2da46f42db920674864118d9da51157a45c96e10602067a31d5279d05600c42",
+      "config_hash": "b8b3b31b1efbbeb5b5457e6bc890620701f75d0a87a41498e95409c677530eae",
       "backend": "fixture",
       "model_id": null,
       "model_revision": null,
@@ -84,11 +165,25 @@
         "citation_precision": 1.0,
         "citation_recall": 1.0,
         "citation_f1": 1.0
-      }
+      },
+      "answer_by_language": [
+        {
+          "language": "en",
+          "answer": {
+            "answer_count": 2,
+            "exact_match_accuracy": 0.5,
+            "numeric_exact_accuracy": 0.5,
+            "text_exact_accuracy": null,
+            "citation_precision": 1.0,
+            "citation_recall": 1.0,
+            "citation_f1": 1.0
+          }
+        }
+      ]
     },
     {
       "mode": "two_pass",
-      "config_hash": "806ed23a56d20221372c08199bd6361674a685fc7818df62a6b48dbf5bfc8ec2",
+      "config_hash": "311e54b80baf33abed1d51c3b062893f30a8a0cbc1a3bb258d2cd7dc53c20088",
       "backend": "fixture",
       "model_id": null,
       "model_revision": null,
@@ -101,7 +196,21 @@
         "citation_precision": 1.0,
         "citation_recall": 1.0,
         "citation_f1": 1.0
-      }
+      },
+      "answer_by_language": [
+        {
+          "language": "en",
+          "answer": {
+            "answer_count": 2,
+            "exact_match_accuracy": 1.0,
+            "numeric_exact_accuracy": 1.0,
+            "text_exact_accuracy": null,
+            "citation_precision": 1.0,
+            "citation_recall": 1.0,
+            "citation_f1": 1.0
+          }
+        }
+      ]
     }
   ]
 }

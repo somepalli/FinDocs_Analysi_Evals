@@ -1,0 +1,94 @@
+{
+  "run_count": 60,
+  "span_count": 188,
+  "failed_run_count": 8,
+  "span_error_count": 16,
+  "cache_hit_rate": 0.25,
+  "non_empty_retrieval_rate": 1.0,
+  "stages": [
+    {
+      "stage": "citation_validation",
+      "span_count": 14,
+      "error_count": 0,
+      "p50_ms": 0.0176,
+      "p95_ms": 0.3142
+    },
+    {
+      "stage": "generation.pass1",
+      "span_count": 10,
+      "error_count": 0,
+      "p50_ms": 5550.4681,
+      "p95_ms": 14753.3414
+    },
+    {
+      "stage": "generation.pass2",
+      "span_count": 2,
+      "error_count": 0,
+      "p50_ms": 3911.2778,
+      "p95_ms": 4571.3645
+    },
+    {
+      "stage": "generation.single_pass",
+      "span_count": 10,
+      "error_count": 0,
+      "p50_ms": 3890.7082,
+      "p95_ms": 13321.4017
+    },
+    {
+      "stage": "reasoning.pass1",
+      "span_count": 10,
+      "error_count": 8,
+      "p50_ms": 5555.1204,
+      "p95_ms": 14755.4511
+    },
+    {
+      "stage": "reasoning.pass2",
+      "span_count": 2,
+      "error_count": 0,
+      "p50_ms": 3913.632,
+      "p95_ms": 4575.9457
+    },
+    {
+      "stage": "reasoning.single_pass",
+      "span_count": 10,
+      "error_count": 0,
+      "p50_ms": 3892.9383,
+      "p95_ms": 13324.7105
+    },
+    {
+      "stage": "reasoning.total",
+      "span_count": 20,
+      "error_count": 8,
+      "p50_ms": 4325.7962,
+      "p95_ms": 14691.9175
+    },
+    {
+      "stage": "retrieval.embedding",
+      "span_count": 30,
+      "error_count": 0,
+      "p50_ms": 289.8044,
+      "p95_ms": 565.744
+    },
+    {
+      "stage": "retrieval.rerank",
+      "span_count": 10,
+      "error_count": 0,
+      "p50_ms": 89347.51,
+      "p95_ms": 105695.6234
+    },
+    {
+      "stage": "retrieval.search",
+      "span_count": 30,
+      "error_count": 0,
+      "p50_ms": 20.6811,
+      "p95_ms": 44.1178
+    },
+    {
+      "stage": "retrieval.total",
+      "span_count": 40,
+      "error_count": 0,
+      "p50_ms": 359.4227,
+      "p95_ms": 93725.5868
+    }
+  ]
+}

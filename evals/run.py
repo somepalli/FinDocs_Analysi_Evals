@@ -15,6 +15,11 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from evals.cross_lingual import (
+    aggregate_answers_by_language,
+    aggregate_retrieval_by_language,
+    validate_paired_cases,
+)
 from evals.schema import (
     AnswerPrediction,
     CitationTarget,
@@ -135,6 +140,12 @@ def run_sweep(
                 backend=backend,
                 retrieval=aggregate_retrieval(cases, predictions),
                 answer=answer,
+                retrieval_by_language=aggregate_retrieval_by_language(cases, predictions),
+                answer_by_language=(
+                    aggregate_answers_by_language(cases, answer_records[strategy])
+                    if answer_records is not None and strategy in answer_records
+                    else ()
+                ),
             )
         )
     reasoning: list[ReasoningResult] = []
@@ -143,9 +154,13 @@ def run_sweep(
             reasoning.append(
                 ReasoningResult(
                     mode=mode,
-                    config_hash=file_hash(reasoning_config_dir / f"{mode}.yaml"),
+                    config_hash=file_hash(
+                        reasoning_config_dir / f"{mode}.yaml",
+                        *_reasoning_prompt_paths(mode),
+                    ),
                     backend="fixture",
                     answer=aggregate_answers(cases, predictions),
+                    answer_by_language=aggregate_answers_by_language(cases, predictions),
                 )
             )
     return SweepResult(
@@ -198,6 +213,7 @@ def run_live_reasoning(
             generation_config_path,
             retrieval_config_path,
             index_config_path,
+            *_reasoning_prompt_paths(mode),
         )
         predictions: dict[str, ReasoningPrediction] = {}
         for case in cases:
@@ -238,6 +254,7 @@ def run_live_reasoning(
                 model_revision=generation_config.revision,
                 retrieval_strategy=retrieval_strategy,
                 answer=aggregate_answers(cases, predictions),
+                answer_by_language=aggregate_answers_by_language(cases, predictions),
             )
         )
     return tuple(results), all_predictions
@@ -329,6 +346,86 @@ def render_markdown(result: SweepResult) -> str:
                 f"{_optional_metric(metrics.numeric_exact_accuracy)} | "
                 f"{metrics.citation_f1:.3f} |"
             )
+    if any(len(item.retrieval_by_language) > 1 for item in result.results):
+        lines.extend(
+            [
+                "",
+                "## Retrieval quality by query language",
+                "",
+                "| Strategy | Language | Queries | Recall@1 | Recall@5 | Recall@8 | MRR | nDCG@8 |",
+                "|---|---|---:|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for item in result.results:
+            for language_result in item.retrieval_by_language:
+                metrics = language_result.retrieval
+                lines.append(
+                    f"| {item.strategy} | {language_result.language} | {metrics.query_count} | "
+                    f"{metrics.recall_at_1:.3f} | {metrics.recall_at_5:.3f} | "
+                    f"{metrics.recall_at_8:.3f} | {metrics.mrr:.3f} | "
+                    f"{metrics.ndcg_at_8:.3f} |"
+                )
+        lines.extend(
+            [
+                "",
+                "### Hindi minus English retrieval gap",
+                "",
+                "| Strategy | Recall@1 gap | Recall@5 gap | MRR gap | nDCG@8 gap |",
+                "|---|---:|---:|---:|---:|",
+            ]
+        )
+        for item in result.results:
+            languages = {entry.language: entry.retrieval for entry in item.retrieval_by_language}
+            if "en" in languages and "hi" in languages:
+                english, hindi = languages["en"], languages["hi"]
+                lines.append(
+                    f"| {item.strategy} | {hindi.recall_at_1 - english.recall_at_1:+.3f} | "
+                    f"{hindi.recall_at_5 - english.recall_at_5:+.3f} | "
+                    f"{hindi.mrr - english.mrr:+.3f} | "
+                    f"{hindi.ndcg_at_8 - english.ndcg_at_8:+.3f} |"
+                )
+    if any(len(item.answer_by_language) > 1 for item in result.reasoning):
+        lines.extend(
+            [
+                "",
+                "## Reasoning quality by query language",
+                "",
+                "| Mode | Language | Answers | Exact | Numeric exact | Citation F1 |",
+                "|---|---|---:|---:|---:|---:|",
+            ]
+        )
+        for item in result.reasoning:
+            for language_result in item.answer_by_language:
+                metrics = language_result.answer
+                lines.append(
+                    f"| {item.mode} | {language_result.language} | {metrics.answer_count} | "
+                    f"{metrics.exact_match_accuracy:.3f} | "
+                    f"{_optional_metric(metrics.numeric_exact_accuracy)} | "
+                    f"{metrics.citation_f1:.3f} |"
+                )
+        lines.extend(
+            [
+                "",
+                "### Hindi minus English reasoning gap",
+                "",
+                "| Mode | Numeric exact gap | Citation F1 gap |",
+                "|---|---:|---:|",
+            ]
+        )
+        for item in result.reasoning:
+            languages = {entry.language: entry.answer for entry in item.answer_by_language}
+            if "en" in languages and "hi" in languages:
+                english, hindi = languages["en"], languages["hi"]
+                numeric_gap = (
+                    "-"
+                    if english.numeric_exact_accuracy is None
+                    or hindi.numeric_exact_accuracy is None
+                    else f"{hindi.numeric_exact_accuracy - english.numeric_exact_accuracy:+.3f}"
+                )
+                lines.append(
+                    f"| {item.mode} | {numeric_gap} | "
+                    f"{hindi.citation_f1 - english.citation_f1:+.3f} |"
+                )
     return "\n".join(lines) + "\n"
 
 
@@ -337,6 +434,8 @@ def main() -> None:
     if not args.sweep:
         raise SystemExit("pass --sweep to run the evaluation sweep")
     cases = load_cases(args.dataset)
+    if args.validate_cross_lingual_pairs:
+        validate_paired_cases(cases)
     records = None if args.live else load_retrieval_records(args.retrieval_records)
     answers = load_answer_records(args.answer_predictions) if args.answer_predictions else None
     reasoning = (
@@ -433,6 +532,11 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help="enable typed local JSONL tracing with this YAML configuration",
     )
+    parser.add_argument(
+        "--validate-cross-lingual-pairs",
+        action="store_true",
+        help="require matched English-Hindi cases with identical scoring targets",
+    )
     return parser.parse_args()
 
 
@@ -505,6 +609,15 @@ def _default_pipeline_factory(
 
 def _optional_metric(value: float | None) -> str:
     return "-" if value is None else f"{value:.3f}"
+
+
+def _reasoning_prompt_paths(mode: str) -> tuple[Path, ...]:
+    prompt_dir = Path("src/findociq/reason/prompts")
+    if mode == "single_pass":
+        return (prompt_dir / "single_pass_reason.txt",)
+    if mode == "two_pass":
+        return (prompt_dir / "pass1_extract.txt", prompt_dir / "pass2_reason.txt")
+    raise ValueError(f"unsupported reasoning mode: {mode}")
 
 
 if __name__ == "__main__":

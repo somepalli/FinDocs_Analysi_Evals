@@ -29,8 +29,9 @@ class EvalCase(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     question_id: str
+    pair_id: str | None = Field(default=None, min_length=1)
     question: str
-    language: str = "en"
+    language: str = Field(default="en", min_length=2)
     relevant_chunk_ids: tuple[str, ...]
     expected_answer: AnswerExpectation | None = None
     expected_citations: tuple[CitationTarget, ...] = ()
@@ -78,6 +79,20 @@ class AnswerMetrics(BaseModel):
     citation_f1: float = Field(ge=0, le=1)
 
 
+class LanguageRetrievalResult(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    language: str
+    retrieval: RetrievalMetrics
+
+
+class LanguageAnswerResult(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    language: str
+    answer: AnswerMetrics
+
+
 class StrategyResult(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -86,6 +101,8 @@ class StrategyResult(BaseModel):
     backend: Literal["live", "fixture"]
     retrieval: RetrievalMetrics
     answer: AnswerMetrics | None = None
+    retrieval_by_language: tuple[LanguageRetrievalResult, ...] = ()
+    answer_by_language: tuple[LanguageAnswerResult, ...] = ()
 
 
 class ReasoningResult(BaseModel):
@@ -98,6 +115,7 @@ class ReasoningResult(BaseModel):
     model_revision: str | None = None
     retrieval_strategy: str | None = None
     answer: AnswerMetrics
+    answer_by_language: tuple[LanguageAnswerResult, ...] = ()
 
 
 class SweepResult(BaseModel):

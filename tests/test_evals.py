@@ -2,6 +2,11 @@ from pathlib import Path
 
 import pytest
 
+from evals.cross_lingual import (
+    aggregate_answers_by_language,
+    aggregate_retrieval_by_language,
+    validate_paired_cases,
+)
 from evals.run import (
     load_answer_records,
     load_cases,
@@ -40,6 +45,79 @@ def test_phase4_dataset_is_corpus_backed_with_bbox_targets() -> None:
     assert len(cases) == 5
     assert all(case.expected_answer is not None for case in cases)
     assert all(case.expected_citations[0].bbox is not None for case in cases)
+
+
+def test_phase6_dataset_has_valid_matched_english_hindi_pairs() -> None:
+    cases = load_cases(ROOT / "evals/datasets/phase6_cross_lingual.jsonl")
+    validate_paired_cases(cases)
+    assert len(cases) == 10
+    assert {case.language for case in cases} == {"en", "hi"}
+    assert len({case.pair_id for case in cases}) == 5
+    assert all(case.expected_citations[0].bbox is not None for case in cases)
+
+
+def test_cross_lingual_pair_validation_rejects_mismatched_targets() -> None:
+    english = EvalCase(
+        question_id="q-en",
+        pair_id="q",
+        question="Revenue?",
+        language="en",
+        relevant_chunk_ids=("a",),
+        expected_answer=AnswerExpectation(answer_type="numeric", value="10"),
+    )
+    hindi = english.model_copy(
+        update={
+            "question_id": "q-hi",
+            "question": "राजस्व?",
+            "language": "hi",
+            "relevant_chunk_ids": ("b",),
+        }
+    )
+    with pytest.raises(ValueError, match="mismatched relevant chunks"):
+        validate_paired_cases((english, hindi))
+
+
+def test_language_aggregates_keep_retrieval_and_answers_separate() -> None:
+    cases = (
+        EvalCase(
+            question_id="q-en",
+            pair_id="q",
+            question="Revenue?",
+            language="en",
+            relevant_chunk_ids=("a",),
+            expected_answer=AnswerExpectation(answer_type="numeric", value="10"),
+        ),
+        EvalCase(
+            question_id="q-hi",
+            pair_id="q",
+            question="राजस्व?",
+            language="hi",
+            relevant_chunk_ids=("a",),
+            expected_answer=AnswerExpectation(answer_type="numeric", value="10"),
+        ),
+    )
+    retrieval = aggregate_retrieval_by_language(
+        cases,
+        {
+            "q-en": (RetrievedItem(chunk_id="a", rank=1, score=1),),
+            "q-hi": (RetrievedItem(chunk_id="x", rank=1, score=1),),
+        },
+    )
+    answers = aggregate_answers_by_language(
+        cases,
+        {
+            "q-en": AnswerPrediction(answer="10"),
+            "q-hi": AnswerPrediction(answer="wrong"),
+        },
+    )
+    assert [(item.language, item.retrieval.recall_at_1) for item in retrieval] == [
+        ("en", 1.0),
+        ("hi", 0.0),
+    ]
+    assert [(item.language, item.answer.exact_match_accuracy) for item in answers] == [
+        ("en", 1.0),
+        ("hi", 0.0),
+    ]
 
 
 def test_numeric_matching_handles_currency_grouping_and_tolerance() -> None:
@@ -133,3 +211,39 @@ def test_fixture_sweep_writes_separate_markdown_tables(tmp_path: Path) -> None:
     assert "## Reasoning comparison" in markdown
     assert "hybrid_rerank" in markdown
     assert render_markdown(result) == markdown
+
+
+def test_cross_lingual_report_renders_language_splits_and_gaps(tmp_path: Path) -> None:
+    cases = load_cases(ROOT / "evals/datasets/phase6_cross_lingual.jsonl")[:2]
+    retrieval = {
+        strategy: {
+            cases[0].question_id: (
+                RetrievedItem(chunk_id=cases[0].relevant_chunk_ids[0], rank=1, score=1),
+            ),
+            cases[1].question_id: (),
+        }
+        for strategy in ("naive", "hybrid", "hybrid_rerank")
+    }
+    predictions = {
+        mode: {
+            cases[0].question_id: AnswerPrediction(answer="1690.1"),
+            cases[1].question_id: AnswerPrediction(answer=""),
+        }
+        for mode in ("single_pass", "two_pass")
+    }
+    result = run_sweep(
+        cases,
+        strategy_paths={
+            name: ROOT / "configs/retrieval" / f"{name}.yaml"
+            for name in ("naive", "hybrid", "hybrid_rerank")
+        },
+        dataset_sha256="paired-hash",
+        retrieval_records=retrieval,
+        reasoning_records=predictions,
+        index_config_path=ROOT / "configs/index/default.yaml",
+    )
+    markdown = write_results(result, tmp_path)[1].read_text(encoding="utf-8")
+    assert "## Retrieval quality by query language" in markdown
+    assert "### Hindi minus English retrieval gap" in markdown
+    assert "## Reasoning quality by query language" in markdown
+    assert "| single_pass | -1.000 | +0.000 |" in markdown

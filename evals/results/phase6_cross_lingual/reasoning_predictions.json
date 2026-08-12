@@ -1,0 +1,238 @@
+{
+  "single_pass": {
+    "desai-revenue-fy25-en": {
+      "answer": "DBL’s revenue remained largely flat at Rs. 1,690.1 crore (Rs. 1,689.3 crore in FY2024) owing to 1% de-growth in the beedi division on account of limited availability of the key raw material, tendu leaves.",
+      "citations": [
+        {
+          "document_id": "062c1c21bfcf3882cec5a9805bec4310a36062cca454681219195efeaff3271e",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 369.739990234375,
+            "x1": 554.4461669921875,
+            "y1": 492.03997802734375
+          }
+        }
+      ],
+      "error": null
+    },
+    "desai-revenue-fy25-hi": {
+      "answer": "FY2025 में Desai Brothers Limited का राजस्व Rs. 1,690.1 करोड़ रुपये था।",
+      "citations": [
+        {
+          "document_id": "062c1c21bfcf3882cec5a9805bec4310a36062cca454681219195efeaff3271e",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 369.739990234375,
+            "x1": 554.4461669921875,
+            "y1": 492.03997802734375
+          }
+        }
+      ],
+      "error": null
+    },
+    "kids-clinic-revenue-fy25-en": {
+      "answer": "1,485.6 crore",
+      "citations": [
+        {
+          "document_id": "0f6d0f8bd72d42d86dd5142ce766c1caafd9b0ef9b817e2a22cca0e1f546ede3",
+          "page_number": 3,
+          "bbox": {
+            "x0": 43.53230813833383,
+            "y0": 602.9684307391827,
+            "x1": 551.97998046875,
+            "y1": 706.0256783621652
+          }
+        }
+      ],
+      "error": null
+    },
+    "kids-clinic-revenue-fy25-hi": {
+      "answer": "FY2025 में Kids Clinic India Limited का समेकित राजस्व 1,485.6 करोड़ रुपये था।",
+      "citations": [
+        {
+          "document_id": "0f6d0f8bd72d42d86dd5142ce766c1caafd9b0ef9b817e2a22cca0e1f546ede3",
+          "page_number": 3,
+          "bbox": {
+            "x0": 43.53230813833383,
+            "y0": 602.9684307391827,
+            "x1": 551.97998046875,
+            "y1": 706.0256783621652
+          }
+        }
+      ],
+      "error": null
+    },
+    "mawana-revenue-growth-fy25-en": {
+      "answer": "The company reported a revenue growth of 7% in FY2025.",
+      "citations": [
+        {
+          "document_id": "d5af328a73423be251138bf2b586b167bc003139a378a2ec7699916844de3c45",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 309.1399841308594,
+            "x1": 554.470947265625,
+            "y1": 389.2999877929687
+          }
+        }
+      ],
+      "error": null
+    },
+    "mawana-revenue-growth-fy25-hi": {
+      "answer": "Mawana Sugars Limited ने FY2025 में 7% की राजस्व वृद्धि दर्ज की।",
+      "citations": [
+        {
+          "document_id": "d5af328a73423be251138bf2b586b167bc003139a378a2ec7699916844de3c45",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 309.1399841308594,
+            "x1": 554.470947265625,
+            "y1": 389.2999877929687
+          }
+        }
+      ],
+      "error": null
+    },
+    "vivriti-pat-fy25-en": {
+      "answer": "Rs. 324 crore",
+      "citations": [
+        {
+          "document_id": "8b79bcfa32c75940466b6cad21c912afa530dbae7c2155f3ad289bf440617588",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 383.6300048828125,
+            "x1": 554.4603881835938,
+            "y1": 520.8399658203125
+          }
+        }
+      ],
+      "error": null
+    },
+    "vivriti-pat-fy25-hi": {
+      "answer": "FY2025 में Vivriti Capital Group ने 324 करोड़ रुपये का समेकित कर-पश्चात लाभ दर्ज किया।",
+      "citations": [
+        {
+          "document_id": "8b79bcfa32c75940466b6cad21c912afa530dbae7c2155f3ad289bf440617588",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 383.6300048828125,
+            "x1": 554.4603881835938,
+            "y1": 520.8399658203125
+          }
+        }
+      ],
+      "error": null
+    },
+    "teecl-revenue-fy25-en": {
+      "answer": "The revenues grew 51% to Rs. 2,268.7 crore in FY2025 over FY2024",
+      "citations": [
+        {
+          "document_id": "b09e6ecec18f0e3e44aecfc31ac3743f4e7dbc02c4b9b9f1ad041c0dcab98d1e",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 457.5799865722656,
+            "x1": 554.4710083007812,
+            "y1": 509.6799621582031
+          }
+        }
+      ],
+      "error": null
+    },
+    "teecl-revenue-fy25-hi": {
+      "answer": "Techno Electric & Engineering Company Limited ने FY2025 में Rs. 2,268.7 करोड़ का राजस्व दर्ज किया।",
+      "citations": [
+        {
+          "document_id": "b09e6ecec18f0e3e44aecfc31ac3743f4e7dbc02c4b9b9f1ad041c0dcab98d1e",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 457.5799865722656,
+            "x1": 554.4710083007812,
+            "y1": 509.6799621582031
+          }
+        }
+      ],
+      "error": null
+    }
+  },
+  "two_pass": {
+    "desai-revenue-fy25-en": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 1 validation error for Pass1Extraction\nquestion\n  Field required [type=missing, input_value={'figures': [{'label': 'r...': 492.039990234375}}}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    },
+    "desai-revenue-fy25-hi": {
+      "answer": "",
+      "citations": [],
+      "error": "JSONDecodeError: Expecting ',' delimiter: line 1 column 1423 (char 1422)"
+    },
+    "kids-clinic-revenue-fy25-en": {
+      "answer": "Kids Clinic India Limited's consolidated revenue in FY2025 was Rs. 1,485.6 crore",
+      "citations": [
+        {
+          "document_id": "0f6d0f8bd72d42d86dd5142ce766c1caafd9b0ef9b817e2a22cca0e1f546ede3",
+          "page_number": 3,
+          "bbox": {
+            "x0": 43.53230813833383,
+            "y0": 602.9684307391827,
+            "x1": 551.97998046875,
+            "y1": 706.0256783621652
+          }
+        }
+      ],
+      "error": null
+    },
+    "kids-clinic-revenue-fy25-hi": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 3 validation errors for Pass1Extraction\nfigures.0.citation\n  Field required [type=missing, input_value={'label': '1,485.6', 'val...re', 'period': 'FY2025'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing\nfigures.1.citation\n  Field required [type=missing, input_value={'label': '1,187.7', 'val...re', 'period': 'FY2024'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing\nfigures.2.citation\n  Field required [type=missing, input_value={'label': '946.7', 'value...re', 'period': 'FY2023'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    },
+    "mawana-revenue-growth-fy25-en": {
+      "answer": "Mawana Sugars Limited reported a revenue growth percentage of 7% in FY2025.",
+      "citations": [
+        {
+          "document_id": "d5af328a73423be251138bf2b586b167bc003139a378a2ec7699916844de3c45",
+          "page_number": 1,
+          "bbox": {
+            "x0": 43.20000076293945,
+            "y0": 309.1399841308594,
+            "x1": 554.470947265625,
+            "y1": 389.2999877929687
+          }
+        }
+      ],
+      "error": null
+    },
+    "mawana-revenue-growth-fy25-hi": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 1 validation error for Pass1Extraction\nquestion\n  Field required [type=missing, input_value={'figures': [{'label': 'r... 492.03997802734375}}}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    },
+    "vivriti-pat-fy25-en": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 1 validation error for Pass1Extraction\nfigures.0.citation\n  Field required [type=missing, input_value={'label': 'consolidated p... '324', 'unit': 'crore'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    },
+    "vivriti-pat-fy25-hi": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 1 validation error for Pass1Extraction\nquestion\n  Field required [type=missing, input_value={'figures': [{'label': 'c...203125}}}], 'notes': []}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    },
+    "teecl-revenue-fy25-en": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 1 validation error for Pass1Extraction\nquestion\n  Field required [type=missing, input_value={'figures': [{'label': 'R...: 164.6299591064453}}}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    },
+    "teecl-revenue-fy25-hi": {
+      "answer": "",
+      "citations": [],
+      "error": "ValidationError: 1 validation error for Pass1Extraction\nquestion\n  Field required [type=missing, input_value={'figures': [{'label': 'r... 111.58999633789062}}}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing"
+    }
+  }
+}

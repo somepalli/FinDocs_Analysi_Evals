@@ -14,7 +14,7 @@ harness lands.
 | 3. Evaluation | Implemented | Separate retrieval and answer score tables |
 | 4. Two-pass reasoning | Live-smoke validated | Single-pass versus two-pass results |
 | 5. Observability | Live-smoke validated | Content-safe latency, cache and failure spans |
-| 6. Cross-lingual | Not started | Results split by query language |
+| 6. Cross-lingual | Live-smoke validated | Paired English-Hindi results by language |
 
 The five-question corpus-backed smoke run is a pipeline validation, not a
 production benchmark claim.
@@ -148,6 +148,41 @@ Three failed runs correspond to the already-known two-pass schema validation
 failures. Retrieval and answer scores were unchanged from Phase 4. These local
 latencies and rates validate instrumentation behavior; they are not production
 performance benchmarks.
+
+## Phase 6 cross-lingual evaluation
+
+The Phase 6 dataset contains five matched financial facts, each asked once in
+English and once in Hindi. Every pair shares the same relevant chunk IDs,
+numeric answer, and exact `(document, page, bbox)` citation targets. Pair
+validation runs before model loading, preventing corpus or label differences
+from being mistaken for language effects. Official company names remain in
+English inside Hindi questions to avoid entity-translation ambiguity.
+
+```powershell
+uv run python -m evals.run --sweep --live --live-reasoning `
+  --dataset evals/datasets/phase6_cross_lingual.jsonl `
+  --results-dir evals/results/phase6_cross_lingual `
+  --observability-config configs/observability/phase6.yaml `
+  --validate-cross-lingual-pairs
+```
+
+The pinned ten-question paired smoke run produced:
+
+| Pipeline | Metric | English | Hindi | Hindi - English |
+|---|---|---:|---:|---:|
+| Hybrid rerank | Recall@1 | 0.800 | 0.800 | +0.000 |
+| Hybrid rerank | Recall@5 | 1.000 | 1.000 | +0.000 |
+| Single pass | Numeric exact | 1.000 | 1.000 | +0.000 |
+| Single pass | Citation F1 | 0.800 | 0.800 | +0.000 |
+| Two pass | Numeric exact | 0.400 | 0.000 | -0.400 |
+| Two pass | Citation F1 | 0.200 | 0.000 | -0.200 |
+
+Naive and hybrid retrieval showed language gaps, while the pinned multilingual
+reranker recovered parity at Recall@1 and Recall@5. All five Hindi two-pass
+queries failed pass-1 structured-output validation; the errors are retained in
+`reasoning_predictions.json` and are not repaired by tuning on this dataset.
+The paired set validates the cross-lingual measurement path but is too small to
+support a production benchmark claim.
 
 ## Provenance contract
 

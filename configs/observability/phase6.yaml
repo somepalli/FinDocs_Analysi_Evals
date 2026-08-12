@@ -1,0 +1,3 @@
+enabled: true
+trace_path: evals/results/phase6_cross_lingual/traces.jsonl
+capture_content: false
