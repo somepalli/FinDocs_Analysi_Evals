@@ -31,14 +31,24 @@ def parse_numbers(value: str) -> tuple[float, ...]:
 
 def normalized_text(value: str) -> str:
     value = unicodedata.normalize("NFKC", value).casefold()
-    value = re.sub(r"[^\w\s]", " ", value)
+    value = re.sub(r"[^\w\s]|_", " ", value)
     return " ".join(value.split())
 
 
 def score_answer_value(predicted: str, expected: AnswerExpectation) -> bool:
     if expected.answer_type == "numeric":
+        assert expected.value is not None
         target = parse_number(expected.value)
         return target is not None and any(
             abs(actual - target) <= expected.tolerance for actual in parse_numbers(predicted)
         )
+    if expected.answer_type == "numeric_multi":
+        actual_values = parse_numbers(predicted)
+        targets = tuple(parse_number(item.value) for item in expected.values)
+        return all(
+            target is not None
+            and any(abs(actual - target) <= expected.tolerance for actual in actual_values)
+            for target in targets
+        )
+    assert expected.value is not None
     return normalized_text(predicted) == normalized_text(expected.value)

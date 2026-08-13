@@ -25,7 +25,7 @@ def aggregate_answers(
         assert case.expected_answer is not None
         matched = score_answer_value(prediction.answer, case.expected_answer)
         exact.append(matched)
-        if case.expected_answer.answer_type == "numeric":
+        if case.expected_answer.answer_type in {"numeric", "numeric_multi"}:
             numeric.append(matched)
         else:
             text.append(matched)

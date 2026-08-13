@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from findociq.ingest.schema import BoundingBox
 
@@ -17,12 +17,34 @@ class CitationTarget(BaseModel):
     bbox: BoundingBox | None = None
 
 
+class LabeledNumericValue(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    label: str = Field(min_length=1)
+    value: str = Field(min_length=1)
+
+
 class AnswerExpectation(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    answer_type: Literal["numeric", "text"]
-    value: str
+    answer_type: Literal["numeric", "numeric_multi", "text", "abstain"]
+    value: str | None = None
+    values: tuple[LabeledNumericValue, ...] = ()
+    direction: str | None = None
     tolerance: float = Field(default=0.0, ge=0.0)
+
+    @model_validator(mode="after")
+    def validate_answer_shape(self) -> AnswerExpectation:
+        if self.answer_type == "numeric_multi":
+            if not self.values:
+                raise ValueError("numeric_multi answer requires labeled values")
+            if self.direction is None or not self.direction.strip():
+                raise ValueError("numeric_multi answer requires direction")
+            if self.value is not None:
+                raise ValueError("numeric_multi answer must use values, not value")
+        elif self.value is None or not self.value.strip():
+            raise ValueError(f"{self.answer_type} answer requires value")
+        return self
 
 
 class EvalCase(BaseModel):
@@ -32,9 +54,19 @@ class EvalCase(BaseModel):
     pair_id: str | None = Field(default=None, min_length=1)
     question: str
     language: str = Field(default="en", min_length=2)
+    category: Literal[
+        "single_lookup",
+        "multi_year_numeric",
+        "derived_metric",
+        "qualitative_flag",
+        "cross_document",
+        "negative",
+    ] | None = None
+    difficulty: Literal["easy", "medium", "hard"] | None = None
     relevant_chunk_ids: tuple[str, ...]
     expected_answer: AnswerExpectation | None = None
     expected_citations: tuple[CitationTarget, ...] = ()
+    notes: str | None = None
 
 
 class RetrievedItem(BaseModel):

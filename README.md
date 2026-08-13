@@ -111,6 +111,9 @@ phase.
 ## Phase 3 evaluation
 
 The evaluation contract lives in [evals/EVAL_SCHEMA.md](evals/EVAL_SCHEMA.md).
+The six initially table-derived benchmark values have also been checked against
+rendered source PDF pages; see the
+[source value audit](evals/datasets/SOURCE_VALUE_AUDIT.md).
 Run the deterministic smoke sweep with:
 
 ```powershell

@@ -22,10 +22,14 @@ must contain:
 
 Required fields are `question_id`, `question`, and `relevant_chunk_ids`.
 `language` defaults to `en`; `expected_answer` and `expected_citations` are
-optional for retrieval-only cases. `answer_type` is `numeric` or `text`.
-Numeric values are compared after removing currency/grouping punctuation and
-with the declared absolute tolerance. Text values are compared after
-case-folding and whitespace/punctuation normalization.
+optional for retrieval-only cases. `answer_type` is `numeric`,
+`numeric_multi`, `text`, or `abstain`. A `numeric_multi` expectation uses a
+non-empty `values` list of labeled numbers plus a required `direction`; all
+expected numbers must occur in the prediction within the declared absolute
+tolerance. Numeric values are compared after removing currency/grouping
+punctuation. Text and abstention values are compared after case-folding and
+whitespace/punctuation normalization. Use the literal `NOT_IN_DOCUMENT` for a
+verified absent fact rather than inventing a value.
 
 Retrieval records are JSON objects keyed by strategy name and question ID:
 

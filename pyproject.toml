@@ -28,7 +28,7 @@ retrieval = [
   "qdrant-client==1.18.0",
 ]
 dev = [
-  "httpx2==2.10.0",
+  "httpx==0.28.1",
   "pylint==4.0.7",
   "pytest==8.3.4",
   "ruff==0.9.10",

@@ -43,7 +43,7 @@ def test_eval_schema_and_fixture_records_load() -> None:
 
 def test_phase4_dataset_is_corpus_backed_with_bbox_targets() -> None:
     cases = load_cases(ROOT / "evals/datasets/phase4_corpus.jsonl")
-    assert len(cases) == 5
+    assert len(cases) == 11
     assert all(case.expected_answer is not None for case in cases)
     assert all(case.expected_citations[0].bbox is not None for case in cases)
 
@@ -137,6 +137,22 @@ def test_numeric_matching_handles_currency_grouping_and_tolerance() -> None:
 def test_text_matching_normalizes_case_punctuation_and_space() -> None:
     expected = AnswerExpectation(answer_type="text", value="Strong growth", tolerance=0)
     assert score_answer_value(" strong   GROWTH! ", expected)
+
+
+def test_numeric_multi_and_abstention_matching() -> None:
+    multi = AnswerExpectation(
+        answer_type="numeric_multi",
+        values=(
+            {"label": "FY2024", "value": "4306"},
+            {"label": "FY2025", "value": "3701"},
+        ),
+        direction="declined",
+        tolerance=0.0,
+    )
+    assert score_answer_value("FY2024: 4,306; FY2025: 3,701", multi)
+    assert not score_answer_value("FY2024: 4,306; FY2025: 3,700", multi)
+    abstain = AnswerExpectation(answer_type="abstain", value="NOT_IN_DOCUMENT")
+    assert score_answer_value("not in document", abstain)
 
 
 def test_retrieval_metrics_are_separate_and_rank_sensitive() -> None:
