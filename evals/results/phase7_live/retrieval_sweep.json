@@ -1,0 +1,90 @@
+{
+  "dataset_sha256": "f1356732204197249c9ded434e93eb74b05ba23a9723e5f24ea7feb573d36882",
+  "results": [
+    {
+      "strategy": "naive",
+      "config_hash": "32038fce3a56b5aeb8478cb30afbfc3520aae3d07a7cd111a58dca837e92107f",
+      "backend": "live",
+      "retrieval": {
+        "query_count": 31,
+        "recall_at_1": 0.2903225806451613,
+        "recall_at_5": 0.5483870967741935,
+        "recall_at_8": 0.6612903225806451,
+        "mrr": 0.4554531490015361,
+        "ndcg_at_8": 0.4885010934595305
+      },
+      "answer": null,
+      "retrieval_by_language": [
+        {
+          "language": "en",
+          "retrieval": {
+            "query_count": 31,
+            "recall_at_1": 0.2903225806451613,
+            "recall_at_5": 0.5483870967741935,
+            "recall_at_8": 0.6612903225806451,
+            "mrr": 0.4554531490015361,
+            "ndcg_at_8": 0.4885010934595305
+          }
+        }
+      ],
+      "answer_by_language": []
+    },
+    {
+      "strategy": "hybrid",
+      "config_hash": "700f8a4314feed6e002cb09c59c023042ba7534d836ddf52d3ea31d34c8bfbf0",
+      "backend": "live",
+      "retrieval": {
+        "query_count": 31,
+        "recall_at_1": 0.20967741935483872,
+        "recall_at_5": 0.6129032258064516,
+        "recall_at_8": 0.7258064516129032,
+        "mrr": 0.39711981566820276,
+        "ndcg_at_8": 0.4664128527389763
+      },
+      "answer": null,
+      "retrieval_by_language": [
+        {
+          "language": "en",
+          "retrieval": {
+            "query_count": 31,
+            "recall_at_1": 0.20967741935483872,
+            "recall_at_5": 0.6129032258064516,
+            "recall_at_8": 0.7258064516129032,
+            "mrr": 0.39711981566820276,
+            "ndcg_at_8": 0.4664128527389763
+          }
+        }
+      ],
+      "answer_by_language": []
+    },
+    {
+      "strategy": "hybrid_rerank",
+      "config_hash": "ae26097a530cb77127b8dcf0bc6579f8e5839d23b1b2cb5bb40cb71f829d3b7f",
+      "backend": "live",
+      "retrieval": {
+        "query_count": 31,
+        "recall_at_1": 0.4032258064516129,
+        "recall_at_5": 0.8064516129032258,
+        "recall_at_8": 0.8709677419354839,
+        "mrr": 0.6086789554531491,
+        "ndcg_at_8": 0.6707014370150204
+      },
+      "answer": null,
+      "retrieval_by_language": [
+        {
+          "language": "en",
+          "retrieval": {
+            "query_count": 31,
+            "recall_at_1": 0.4032258064516129,
+            "recall_at_5": 0.8064516129032258,
+            "recall_at_8": 0.8709677419354839,
+            "mrr": 0.6086789554531491,
+            "ndcg_at_8": 0.6707014370150204
+          }
+        }
+      ],
+      "answer_by_language": []
+    }
+  ],
+  "reasoning": []
+}

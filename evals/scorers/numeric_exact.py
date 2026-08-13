@@ -38,11 +38,13 @@ def normalized_text(value: str) -> str:
 def score_answer_value(predicted: str, expected: AnswerExpectation) -> bool:
     if expected.answer_type == "numeric":
         assert expected.value is not None
+        assert expected.tolerance is not None
         target = parse_number(expected.value)
         return target is not None and any(
             abs(actual - target) <= expected.tolerance for actual in parse_numbers(predicted)
         )
     if expected.answer_type == "numeric_multi":
+        assert expected.tolerance is not None
         actual_values = parse_numbers(predicted)
         targets = tuple(parse_number(item.value) for item in expected.values)
         return all(

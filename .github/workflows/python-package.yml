@@ -35,5 +35,10 @@ jobs:
           --dataset evals/datasets/phase4_corpus.jsonl
           --dataset evals/datasets/phase6_cross_lingual.jsonl
           --corpus-manifest evals/datasets/phase1_benchmark_chunk_manifest.json
+      - name: Validate expanded Phase 7 evaluation dataset
+        run: >-
+          uv run --frozen --no-sync python scripts/validate_dataset.py
+          --dataset evals/datasets/phase7_corpus.jsonl
+          --corpus-manifest evals/datasets/phase1_benchmark_chunk_manifest.json
       - name: Test with pytest
         run: uv run --frozen --no-sync python -m pytest -p no:cacheprovider

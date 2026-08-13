@@ -60,3 +60,12 @@ def test_manifest_rejects_duplicate_chunk_ids(tmp_path: Path) -> None:
     manifest.write_text(json.dumps({"chunk_ids": ["a", "a"]}), encoding="utf-8")
     with pytest.raises(ValueError, match="duplicates"):
         load_corpus_manifest(manifest)
+
+
+def test_validator_applies_typed_answer_contract(tmp_path: Path) -> None:
+    dataset = _write_jsonl(
+        tmp_path / "dataset.jsonl",
+        _case(expected_answer={"answer_type": "numeric", "value": "10", "tolerance": None}),
+    )
+    with pytest.raises(ValueError, match="numeric answer requires tolerance"):
+        validate_datasets((dataset,), frozenset({"chunk-1"}))

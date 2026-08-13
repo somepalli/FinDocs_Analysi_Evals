@@ -48,6 +48,13 @@ def test_phase4_dataset_is_corpus_backed_with_bbox_targets() -> None:
     assert all(case.expected_citations[0].bbox is not None for case in cases)
 
 
+def test_phase7_dataset_loads_all_verified_cases() -> None:
+    cases = load_cases(ROOT / "evals/datasets/phase7_corpus.jsonl")
+    assert len(cases) == 31
+    assert all(case.expected_answer is not None for case in cases)
+    assert all(case.expected_citations for case in cases)
+
+
 def test_vllm_eval_hash_inputs_include_selected_model_tier() -> None:
     paths = _generation_config_paths(ROOT / "configs/reasoning/gemma_vllm.yaml")
     assert [path.name for path in paths] == ["gemma_vllm.yaml", "single_gpu.yaml"]

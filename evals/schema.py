@@ -31,7 +31,7 @@ class AnswerExpectation(BaseModel):
     value: str | None = None
     values: tuple[LabeledNumericValue, ...] = ()
     direction: str | None = None
-    tolerance: float = Field(default=0.0, ge=0.0)
+    tolerance: float | None = Field(default=0.0, ge=0.0)
 
     @model_validator(mode="after")
     def validate_answer_shape(self) -> AnswerExpectation:
@@ -44,6 +44,8 @@ class AnswerExpectation(BaseModel):
                 raise ValueError("numeric_multi answer must use values, not value")
         elif self.value is None or not self.value.strip():
             raise ValueError(f"{self.answer_type} answer requires value")
+        if self.answer_type in {"numeric", "numeric_multi"} and self.tolerance is None:
+            raise ValueError(f"{self.answer_type} answer requires tolerance")
         return self
 
 

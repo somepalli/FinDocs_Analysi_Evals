@@ -9,6 +9,10 @@ from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
+from evals.schema import EvalCase
+
 
 def _jsonl_files(paths: Iterable[Path]) -> tuple[Path, ...]:
     files: list[Path] = []
@@ -102,6 +106,11 @@ def validate_datasets(dataset_paths: Iterable[Path], corpus_ids: frozenset[str])
                 else:
                     seen_questions[question_id] = location
             prefix = f"{location} [{question_label}]"
+
+            try:
+                EvalCase.model_validate(payload)
+            except ValidationError as error:
+                errors.append(f"{prefix}: schema validation failed: {error}")
 
             for verify_path in _verify_paths(payload):
                 errors.append(f"{prefix}: unresolved VERIFY at {verify_path}")

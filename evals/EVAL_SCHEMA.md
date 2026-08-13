@@ -27,9 +27,10 @@ optional for retrieval-only cases. `answer_type` is `numeric`,
 non-empty `values` list of labeled numbers plus a required `direction`; all
 expected numbers must occur in the prediction within the declared absolute
 tolerance. Numeric values are compared after removing currency/grouping
-punctuation. Text and abstention values are compared after case-folding and
-whitespace/punctuation normalization. Use the literal `NOT_IN_DOCUMENT` for a
-verified absent fact rather than inventing a value.
+punctuation. Text and abstention values may set `tolerance` to `null` because
+it is not used; they are compared after case-folding and whitespace/punctuation
+normalization. Use the literal `NOT_IN_DOCUMENT` for a verified absent fact
+rather than inventing a value.
 
 Retrieval records are JSON objects keyed by strategy name and question ID:
 

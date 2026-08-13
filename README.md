@@ -15,6 +15,7 @@ harness lands.
 | 4. Two-pass reasoning | Live-smoke validated | Single-pass versus two-pass results |
 | 5. Observability | Live-smoke validated | Content-safe latency, cache and failure spans |
 | 6. Cross-lingual | Live-smoke validated | Paired English-Hindi results by language |
+| 7. Expanded retrieval evaluation | GPU validated | 31-question, six-category corpus-backed sweep |
 
 Every reported `1.000` below comes from an early `n=5` question/fact cohort;
 the evaluation is expanding to `n=80`. These runs validate the pipeline and
@@ -286,6 +287,40 @@ queries failed pass-1 structured-output validation; the errors are retained in
 The paired set validates the cross-lingual measurement path but is too small to
 support a production benchmark claim.
 
+## Phase 7 expanded retrieval evaluation
+
+Phase 7 expands retrieval evaluation to `n=31` English questions across six
+categories: single lookup, multi-year numeric, derived metric, qualitative
+flag, cross-document, and negative/abstention. Every question resolves to the
+reviewed 1,236-chunk ingestion, and the checked-in dataset contains no
+`VERIFY` placeholders.
+
+```powershell
+uv run python scripts/validate_dataset.py `
+  --dataset evals/datasets/phase7_corpus.jsonl `
+  --corpus corpus/phase1_chunks
+uv run python -m evals.run --sweep --live `
+  --dataset evals/datasets/phase7_corpus.jsonl `
+  --results-dir evals/results/phase7_live
+```
+
+The live sweep ran on 2026-08-13 with BGE-M3 and
+bge-reranker-v2-m3 on an NVIDIA GeForce RTX 4080 Laptop GPU using
+`torch 2.13.0+cu130`; Qdrant contained all 1,236 chunks. These are retrieval
+measurements only, not answer-generation scores. With `n=31`, they are more
+representative than the earlier five-question smoke runs but remain an early,
+single-corpus benchmark.
+
+| Strategy | Backend | Questions | Recall@1 | Recall@5 | Recall@8 | MRR | nDCG@8 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Naive dense | live GPU | 31 | 0.290 | 0.548 | 0.661 | 0.455 | 0.489 |
+| Hybrid RRF | live GPU | 31 | 0.210 | 0.613 | 0.726 | 0.397 | 0.466 |
+| Hybrid RRF + BGE rerank | live GPU | 31 | 0.403 | 0.806 | 0.871 | 0.609 | 0.671 |
+
+The complete machine-readable and rendered outputs are checked in under
+`evals/results/phase7_live/`; the dataset SHA-256 is
+`f1356732204197249c9ded434e93eb74b05ba23a9723e5f24ea7feb573d36882`.
+
 ## FastAPI service
 
 The HTTP layer only validates requests and delegates to `FinDocIQService`;
@@ -327,5 +362,6 @@ attached to the table chunk.
 - Retrieval unit tests inject deterministic model/store doubles; running the
   real BGE-M3 and bge-reranker weights requires the pinned `retrieval` extra and
   a local Qdrant service.
-- No retrieval benchmark is claimed yet. The separate retrieval scorers and
-  reproducible sweep belong to Phase 3.
+- The Phase 7 retrieval benchmark has 31 questions from one ICRA-rationale
+  corpus. It is useful for strategy comparison, not a production-quality or
+  cross-domain claim.
