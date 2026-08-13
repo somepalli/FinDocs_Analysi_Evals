@@ -8,6 +8,7 @@ from evals.cross_lingual import (
     validate_paired_cases,
 )
 from evals.run import (
+    _generation_config_paths,
     load_answer_records,
     load_cases,
     load_retrieval_records,
@@ -45,6 +46,11 @@ def test_phase4_dataset_is_corpus_backed_with_bbox_targets() -> None:
     assert len(cases) == 5
     assert all(case.expected_answer is not None for case in cases)
     assert all(case.expected_citations[0].bbox is not None for case in cases)
+
+
+def test_vllm_eval_hash_inputs_include_selected_model_tier() -> None:
+    paths = _generation_config_paths(ROOT / "configs/reasoning/gemma_vllm.yaml")
+    assert [path.name for path in paths] == ["gemma_vllm.yaml", "single_gpu.yaml"]
 
 
 def test_phase6_dataset_has_valid_matched_english_hindi_pairs() -> None:

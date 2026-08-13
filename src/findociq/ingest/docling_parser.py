@@ -31,6 +31,10 @@ class ParserConfig:
     fail_on_vision_required: bool = True
 
 
+class TableExtractionFailed(RuntimeError):
+    """Raised when the fast-path table detector cannot inspect a digital page."""
+
+
 class DocumentParser:
     """Parse a PDF while preserving block geometry and page routing decisions."""
 
@@ -49,8 +53,8 @@ class DocumentParser:
         document_id = stable_document_id(path)
         decisions = self.router.route(path)
 
-        if self.config.prefer_docling and all(
-            decision.route is PageRoute.DIGITAL for decision in decisions
+        if self.config.prefer_docling and any(
+            decision.route is not PageRoute.DIGITAL for decision in decisions
         ):
             docling_result = self._try_docling(path, document_id, decisions)
             if docling_result is not None:
@@ -60,18 +64,12 @@ class DocumentParser:
         with fitz.open(path) as document:
             for decision, page in zip(decisions, document, strict=True):
                 if decision.route is PageRoute.DIGITAL:
-                    blocks = self._parse_digital_page(path, document_id, page)
-                else:
                     try:
-                        blocks = self.vision_extractor.extract_page(
-                            pdf_path=str(path),
-                            page_number=decision.page_number,
-                            document_id=document_id,
-                        )
-                    except RuntimeError:
-                        if self.config.fail_on_vision_required:
-                            raise
-                        blocks = ()
+                        blocks = self._parse_digital_page(path, document_id, page)
+                    except TableExtractionFailed:
+                        blocks = self._vision_blocks(path, document_id, decision.page_number)
+                else:
+                    blocks = self._vision_blocks(path, document_id, decision.page_number)
                 pages.append(
                     ParsedPage(
                         page_number=decision.page_number,
@@ -85,6 +83,20 @@ class DocumentParser:
             pages=tuple(pages),
             parser_name="pymupdf-fast-path+gemma-vision",
         )
+
+    def _vision_blocks(
+        self, path: Path, document_id: str, page_number: int
+    ) -> tuple[DocumentBlock, ...]:
+        try:
+            return self.vision_extractor.extract_page(
+                pdf_path=str(path),
+                page_number=page_number,
+                document_id=document_id,
+            )
+        except RuntimeError:
+            if self.config.fail_on_vision_required:
+                raise
+            return ()
 
     def _try_docling(
         self,
@@ -106,21 +118,24 @@ class DocumentParser:
 
         try:
             converted = DocumentConverter().convert(path)
-            items = converted.document.iterate_items()
+            docling_document = converted.document
+            items = docling_document.iterate_items()
             by_page: dict[int, list[DocumentBlock]] = {
                 decision.page_number: [] for decision in decisions
             }
             for order, entry in enumerate(items):
                 item = entry[0] if isinstance(entry, tuple) else entry
+                label = str(getattr(item, "label", "text")).lower()
                 text = str(getattr(item, "text", "")).strip()
+                if not text and "table" in label and hasattr(item, "export_to_markdown"):
+                    text = str(item.export_to_markdown(docling_document)).strip()
                 provenance_items = getattr(item, "prov", ())
                 if not text or not provenance_items:
                     continue
                 source = provenance_items[0]
                 page_number = int(source.page_no)
                 bbox = source.bbox
-                page_size = source.page_size
-                label = str(getattr(item, "label", "text")).lower()
+                page_size = docling_document.pages[page_number].size
                 block_type = self._docling_block_type(label)
                 by_page[page_number].append(
                     DocumentBlock(
@@ -130,12 +145,7 @@ class DocumentParser:
                             document_id=document_id,
                             source_path=str(path),
                             page_number=page_number,
-                            bbox=BoundingBox(
-                                x0=float(bbox.l),
-                                y0=float(bbox.t),
-                                x1=float(bbox.r),
-                                y1=float(bbox.b),
-                            ),
+                            bbox=self._docling_bbox(bbox, float(page_size.height)),
                             page_width=float(page_size.width),
                             page_height=float(page_size.height),
                         ),
@@ -172,6 +182,20 @@ class DocumentParser:
         if "picture" in label or "image" in label:
             return BlockType.IMAGE
         return BlockType.PARAGRAPH
+
+    @staticmethod
+    def _docling_bbox(bbox: Any, page_height: float) -> BoundingBox:
+        origin = str(getattr(bbox, "coord_origin", "")).lower()
+        if "bottomleft" in origin:
+            y0, y1 = page_height - float(bbox.t), page_height - float(bbox.b)
+        else:
+            y0, y1 = float(bbox.t), float(bbox.b)
+        return BoundingBox(
+            x0=min(float(bbox.l), float(bbox.r)),
+            y0=min(y0, y1),
+            x1=max(float(bbox.l), float(bbox.r)),
+            y1=max(y0, y1),
+        )
 
     @staticmethod
     def _parse_digital_page(
@@ -227,8 +251,8 @@ class DocumentParser:
     def _table_rectangles(page: fitz.Page) -> list[tuple[fitz.Rect, str]]:
         try:
             tables = page.find_tables().tables
-        except (AttributeError, RuntimeError):
-            return []
+        except (AttributeError, RuntimeError) as error:
+            raise TableExtractionFailed("PyMuPDF table extraction failed") from error
         results: list[tuple[fitz.Rect, str]] = []
         for table in tables:
             rows = table.extract()

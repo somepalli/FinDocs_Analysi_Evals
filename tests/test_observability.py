@@ -3,8 +3,14 @@ from pathlib import Path
 import pytest
 
 from findociq.observability.aggregate import aggregate_traces, write_observability_report
-from findociq.observability.recorder import InMemoryRecorder, JsonlRecorder, TraceObserver
-from findociq.observability.schema import ObservabilityConfig, TraceContext
+from findociq.observability.langfuse import LangfuseOtlpRecorder
+from findociq.observability.recorder import (
+    CompositeRecorder,
+    InMemoryRecorder,
+    JsonlRecorder,
+    TraceObserver,
+)
+from findociq.observability.schema import LangfuseOtlpConfig, ObservabilityConfig, TraceContext
 from findociq.retrieve.pipeline import RetrievalPipeline, RetrievalStrategyConfig
 from tests.test_retrieval import FakeEmbedder, FakeStore
 
@@ -51,6 +57,11 @@ def test_observability_config_is_typed_and_content_safe() -> None:
     assert "What was revenue?" not in serialized
     assert len(trace_context.query_sha256) == 64
     assert trace_context.run_id == context().run_id
+    langfuse = ObservabilityConfig.from_yaml(ROOT / "configs/observability/langfuse.yaml")
+    assert langfuse.langfuse is not None
+    assert langfuse.langfuse.enabled is True
+    with pytest.raises(ValueError, match="self-hosted"):
+        LangfuseOtlpConfig(enabled=True, base_url="https://cloud.langfuse.com")
 
 
 def test_observer_records_success_and_error_without_exception_text() -> None:
@@ -120,3 +131,23 @@ def test_jsonl_recorder_resets_and_writes_typed_events(tmp_path: Path) -> None:
     content = path.read_text(encoding="utf-8")
     assert "stale" not in content
     assert '"stage":"stage"' in content
+
+
+def test_composite_recorder_fans_out_identical_safe_events() -> None:
+    first, second = InMemoryRecorder(), InMemoryRecorder()
+    observer = TraceObserver(CompositeRecorder(first, second), StepClock(0, 1_000_000))
+    with observer.span(context(), "generation.single_pass", {"model_id": "gemma"}):
+        pass
+    assert first.events == second.events
+    assert "What was revenue?" not in first.events[0].model_dump_json()
+
+
+def test_langfuse_export_requires_environment_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LANGFUSE_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("LANGFUSE_SECRET_KEY", raising=False)
+    recorder = LangfuseOtlpRecorder(LangfuseOtlpConfig(enabled=True))
+    with (
+        pytest.raises(RuntimeError, match="LANGFUSE_PUBLIC_KEY"),
+        TraceObserver(recorder, StepClock(0, 1_000_000)).span(context(), "stage"),
+    ):
+        pass

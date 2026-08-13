@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+from decimal import Decimal, InvalidOperation
 
 from findociq.observability.recorder import TraceObserver
 from findociq.observability.schema import TraceContext
@@ -10,7 +12,9 @@ from findociq.reason.generation import GenerationClient
 from findociq.reason.prompting import load_prompt, render_evidence, substitute
 from findociq.reason.schema import (
     Pass1Extraction,
+    SourceCitation,
     citation_from_provenance,
+    citation_identity,
     ground_citation,
 )
 from findociq.retrieve.schema import RetrievalHit
@@ -37,10 +41,9 @@ class Pass1Extractor:
             QUESTION=question,
             EVIDENCE=render_evidence(hits),
         )
-        raw = self.client.complete(
-            prompt, trace_context=trace_context, stage="generation.pass1"
-        )
-        extraction = Pass1Extraction.model_validate(_parse_json(raw))
+        raw = self.client.complete(prompt, trace_context=trace_context, stage="generation.pass1")
+        payload = _repair_grounded_output(_parse_json(raw), question, hits)
+        extraction = Pass1Extraction.model_validate(payload)
         context = trace_context or TraceContext.for_query(question, operation="reasoning:pass1")
         with self.observer.span(
             context,
@@ -60,9 +63,7 @@ class Pass1Extractor:
         )
         try:
             figures = tuple(
-                figure.model_copy(
-                    update={"citation": ground_citation(figure.citation, allowed)}
-                )
+                figure.model_copy(update={"citation": ground_citation(figure.citation, allowed)})
                 for figure in extraction.figures
             )
         except ValueError as error:
@@ -86,3 +87,62 @@ def _parse_json(raw: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ValueError("generation response must be a JSON object")
     return value
+
+
+_NUMBER = re.compile(r"(?<![\d.,])[-+]?\d[\d,]*(?:\.\d+)?(?![\d.,])")
+
+
+def _repair_grounded_output(
+    payload: dict[str, object],
+    question: str,
+    hits: tuple[RetrievalHit, ...],
+) -> dict[str, object]:
+    """Repair omissions only when the caller or evidence determines the value."""
+    repaired = dict(payload)
+    repaired["question"] = question
+    figures = repaired.get("figures")
+    if not isinstance(figures, list):
+        return repaired
+    repaired_figures: list[object] = []
+    for item in figures:
+        if not isinstance(item, dict) or item.get("citation") is not None:
+            repaired_figures.append(item)
+            continue
+        citation = _unique_value_citation(item.get("value"), hits)
+        if citation is None:
+            repaired_figures.append(item)
+            continue
+        repaired_item = dict(item)
+        repaired_item["citation"] = citation.model_dump(mode="json")
+        repaired_figures.append(repaired_item)
+    repaired["figures"] = repaired_figures
+    return repaired
+
+
+def _unique_value_citation(
+    raw_value: object, hits: tuple[RetrievalHit, ...]
+) -> SourceCitation | None:
+    if not isinstance(raw_value, str) or not raw_value.strip():
+        return None
+    value_numbers = _normalized_numbers(raw_value)
+    matching: list[SourceCitation] = []
+    for hit in hits:
+        text_matches = (
+            bool(value_numbers)
+            and len(value_numbers) == 1
+            and value_numbers[0] in _normalized_numbers(hit.chunk.text)
+        ) or (not value_numbers and raw_value.strip().casefold() in hit.chunk.text.casefold())
+        if text_matches:
+            matching.extend(citation_from_provenance(item) for item in hit.chunk.provenance)
+    identities = {citation_identity(item): item for item in matching}
+    return next(iter(identities.values())) if len(identities) == 1 else None
+
+
+def _normalized_numbers(value: str) -> tuple[Decimal, ...]:
+    normalized: list[Decimal] = []
+    for token in _NUMBER.findall(value):
+        try:
+            normalized.append(Decimal(token.replace(",", "")))
+        except InvalidOperation:
+            continue
+    return tuple(normalized)

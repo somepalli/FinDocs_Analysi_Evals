@@ -1,6 +1,9 @@
 name: ceiling
-model_id: google/gemma-3-27b-it
-revision: 005ad3404e59d6023443cb575daa05336842228a
+source_model_id: google/gemma-3-27b-it
+model_id: gaunernst/gemma-3-27b-it-int4-awq
+revision: 7cf8bdc81343c635390dd1e1bf590ab22dd6f366
 quantization: awq-int4
 temperature: 0.0
 seed: 17
+max_model_length: 8192
+gpu_memory_utilization: 0.92

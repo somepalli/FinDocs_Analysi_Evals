@@ -10,18 +10,25 @@ readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "Apache-2.0" }
 dependencies = [
+  "fastapi==0.141.1",
   "pydantic==2.10.3",
   "PyMuPDF==1.27.2.3",
   "PyYAML==6.0.3",
 ]
 
 [project.optional-dependencies]
+api = ["uvicorn==0.52.1"]
 docling = ["docling==2.62.0"]
+observability = [
+  "opentelemetry-exporter-otlp-proto-http==1.44.0",
+  "opentelemetry-sdk==1.44.0",
+]
 retrieval = [
   "FlagEmbedding==1.4.0",
   "qdrant-client==1.18.0",
 ]
 dev = [
+  "httpx2==2.10.0",
   "pylint==4.0.7",
   "pytest==8.3.4",
   "ruff==0.9.10",
@@ -32,6 +39,8 @@ findociq-ingest = "findociq.ingest.cli:main"
 findociq-retrieval = "findociq.retrieve.cli:main"
 findociq-evals = "evals.run:main"
 findociq-reason = "findociq.reason.cli:main"
+findociq-serve = "findociq.reason.serve:main"
+findociq-api = "findociq.api.app:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/findociq", "evals"]

@@ -7,7 +7,6 @@ It does not import or call proprietary model APIs.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Protocol
 from urllib.error import HTTPError, URLError
@@ -15,21 +14,51 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 import yaml
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from findociq.observability.recorder import TraceObserver
 from findociq.observability.schema import TraceContext
 
 
-@dataclass(frozen=True, slots=True)
-class GenerationConfig:
+class ModelTierConfig(BaseModel):
+    """Pinned open-weight model tier served by the local runtime."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: Literal["laptop", "single_gpu", "ceiling"]
+    source_model_id: str = Field(min_length=1)
+    model_id: str = Field(min_length=1)
+    revision: str = Field(min_length=1)
+    quantization: Literal["awq-int4"]
+    temperature: Literal[0.0] = 0.0
+    seed: int = 17
+    max_model_length: int = Field(default=8192, gt=0)
+    gpu_memory_utilization: float = Field(default=0.90, gt=0, le=1)
+
+    @classmethod
+    def from_yaml(cls, path: str | Path) -> ModelTierConfig:
+        source = Path(path)
+        payload = yaml.safe_load(source.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError(f"model tier config must be a mapping: {source}")
+        return cls(**payload)
+
+
+class GenerationConfig(BaseModel):
+    """Typed local generation endpoint and deterministic decoding settings."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     base_url: str
-    model_id: str
-    revision: str
+    model_id: str = Field(min_length=1)
+    revision: str = Field(min_length=1)
     backend: Literal["ollama", "vllm"] = "vllm"
     temperature: float = 0.0
     seed: int = 17
-    max_tokens: int = 1024
-    timeout_seconds: int = 120
+    max_tokens: int = Field(default=1024, gt=0)
+    timeout_seconds: int = Field(default=120, gt=0)
+    model_tier: Literal["laptop", "single_gpu", "ceiling"] | None = None
+    quantization: Literal["awq-int4"] | None = None
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> GenerationConfig:
@@ -37,18 +66,32 @@ class GenerationConfig:
         payload = yaml.safe_load(source.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise ValueError(f"generation config must be a mapping: {source}")
+        tier_path = payload.pop("tier_config", None)
+        if payload.get("backend", "vllm") == "vllm" and tier_path is None:
+            raise ValueError("vLLM generation YAML must select a model tier")
+        if tier_path is not None:
+            if "model_id" in payload or "revision" in payload:
+                raise ValueError("generation config cannot mix tier_config with model_id/revision")
+            resolved = (source.parent / str(tier_path)).resolve()
+            tier = ModelTierConfig.from_yaml(resolved)
+            payload.update(
+                {
+                    "model_id": tier.source_model_id,
+                    "revision": tier.revision,
+                    "model_tier": tier.name,
+                    "quantization": tier.quantization,
+                }
+            )
         return cls(**payload)
 
-    def __post_init__(self) -> None:
+    @model_validator(mode="after")
+    def validate_local_endpoint(self) -> GenerationConfig:
         parsed = urlparse(self.base_url)
         if parsed.scheme != "http" or parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
             raise ValueError("generation base_url must be a local HTTP endpoint")
-        if not self.model_id or not self.revision:
-            raise ValueError("model_id and revision are required")
         if not 0 <= self.temperature <= 2:
             raise ValueError("temperature must be between 0 and 2")
-        if self.max_tokens <= 0 or self.timeout_seconds <= 0:
-            raise ValueError("max_tokens and timeout_seconds must be positive")
+        return self
 
 
 class GenerationClient(Protocol):
@@ -152,5 +195,28 @@ class LocalGemmaClient:
         self._revision_validated = True
 
 
-# Backwards-compatible import for callers created during the initial Phase 4 work.
-VllmGemmaClient = LocalGemmaClient
+class VllmGemmaClient(LocalGemmaClient):
+    """Gemma client bound to a local vLLM OpenAI-compatible endpoint."""
+
+    def __init__(self, config: GenerationConfig, observer: TraceObserver | None = None) -> None:
+        if config.backend != "vllm":
+            raise ValueError("VllmGemmaClient requires a vLLM generation config")
+        super().__init__(config, observer)
+
+
+class OllamaGemmaClient(LocalGemmaClient):
+    """Gemma client bound to Ollama's OpenAI-compatible endpoint."""
+
+    def __init__(self, config: GenerationConfig, observer: TraceObserver | None = None) -> None:
+        if config.backend != "ollama":
+            raise ValueError("OllamaGemmaClient requires an Ollama generation config")
+        super().__init__(config, observer)
+
+
+def build_generation_client(
+    config: GenerationConfig, observer: TraceObserver | None = None
+) -> LocalGemmaClient:
+    """Select a concrete local serving client from typed configuration."""
+    if config.backend == "vllm":
+        return VllmGemmaClient(config, observer)
+    return OllamaGemmaClient(config, observer)

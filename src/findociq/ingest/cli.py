@@ -9,6 +9,9 @@ from findociq.ingest.chunker import LayoutAwareChunker
 from findociq.ingest.config import IngestionConfig
 from findociq.ingest.docling_parser import DocumentParser, ParserConfig
 from findociq.ingest.router import PageRouter
+from findociq.ingest.vlm_fallback import OpenAICompatibleGemmaVisionExtractor
+from findociq.observability.recorder import build_observer
+from findociq.observability.schema import ObservabilityConfig
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,6 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = build_parser().parse_args()
     config = IngestionConfig.from_yaml(args.config)
+    observer = build_observer(ObservabilityConfig.from_yaml(config.observability_config))
     parser_config = config.parser
     if args.pymupdf_only:
         parser_config = ParserConfig(
@@ -41,6 +45,7 @@ def main() -> None:
     parsed = DocumentParser(
         config=parser_config,
         router=PageRouter(config.router),
+        vision_extractor=OpenAICompatibleGemmaVisionExtractor(config.vision, observer),
     ).parse(args.pdf)
     chunks = LayoutAwareChunker(config.chunker).chunk(parsed)
     args.output.parent.mkdir(parents=True, exist_ok=True)

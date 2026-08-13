@@ -16,8 +16,24 @@ harness lands.
 | 5. Observability | Live-smoke validated | Content-safe latency, cache and failure spans |
 | 6. Cross-lingual | Live-smoke validated | Paired English-Hindi results by language |
 
-The five-question corpus-backed smoke run is a pipeline validation, not a
-production benchmark claim.
+Every reported `1.000` below comes from an early `n=5` question/fact cohort;
+the evaluation is expanding to `n=80`. These runs validate the pipeline and
+measurement path, not production quality.
+
+## Production stack
+
+| Component | Default | Fallback / tiers |
+|---|---|---|
+| Generation | Gemma 3 12B AWQ int4 | Pinned 4B, 12B, and 27B YAML tiers |
+| Serving | vLLM OpenAI-compatible endpoint | Ollama `gemma3:4b` |
+| Vision | Gemma 3 multimodal through vLLM | Fail closed when unconfigured |
+| Embeddings | BGE-M3 dense + sparse | One pinned model revision |
+| Reranking | bge-reranker-v2-m3, top-50 to top-8 | None |
+| Vector store | Local Qdrant | None required |
+| Parsing | PyMuPDF digital fast path; Docling for complex pages | Gemma vision |
+| Tracing | Self-hosted Langfuse OTLP + local JSONL | JSONL only |
+| API | Thin FastAPI boundary | CLI entry points |
+| Packages | uv + `pyproject.toml` + `uv.lock` | No `requirements.txt` |
 
 ## Phase 1 quick start
 
@@ -29,10 +45,13 @@ uv run python scripts/spot_check_chunk.py tests/fixtures/digital.pdf chunks.json
   --chunk-id <id> --output spot-check.png
 ```
 
-The default parser prefers Docling when the optional `docling` extra is
-installed and uses the PyMuPDF fast path for digital pages. Scanned or hybrid
-pages require a configured Gemma 3 vision endpoint; they are never silently
-treated as reliable text extraction.
+The default parser uses the PyMuPDF coordinate-preserving fast path for digital
+pages and tries pinned Docling for scanned or hybrid documents. If Docling
+cannot produce grounded blocks, or PyMuPDF table extraction fails, the page is
+rendered for the configured local Gemma 3 multimodal endpoint. It is never
+silently treated as a reliable text-only dump. The pinned Docling 2.62 adapter
+has been exercised against the scanned fixture, including conversion of
+Docling's bottom-left boxes into PDF point coordinates.
 
 ## Phase 2 retrieval
 
@@ -60,8 +79,8 @@ The evaluation contract lives in [evals/EVAL_SCHEMA.md](evals/EVAL_SCHEMA.md).
 Run the deterministic smoke sweep with:
 
 ```powershell
-$env:PYTHONPATH = "src;."
-python -m evals.run --sweep --answer-predictions evals/datasets/smoke_answers.json
+uv run python -m evals.run --sweep `
+  --answer-predictions evals/datasets/smoke_answers.json
 ```
 
 It writes separate retrieval and answer tables to `evals/results/`. Add
@@ -74,17 +93,40 @@ metrics.
 Reasoning is explicitly single-pass or two-pass. Pass 1 extracts figures with
 page/bbox provenance; pass 2 receives only that structured extraction, never
 the raw retrieval chunks. Both paths require at least one grounded citation.
-The local OpenAI-compatible Gemma client is configured in
-`configs/reasoning/gemma_local.yaml` and uses temperature 0 with a fixed seed.
-The checked-in laptop configuration uses Ollama's open-weight `gemma3:4b` and
-verifies its full local content digest before the first model call.
+The local OpenAI-compatible Gemma client defaults to
+`google/gemma-3-12b-it`. vLLM serves that canonical name from the pinned
+`gaunernst/gemma-3-12b-it-int4-awq` artifact. The 4B laptop and 27B ceiling
+tiers are in `configs/model_tiers/`; all three use pinned AWQ int4 artifacts,
+temperature 0, fixed seeds, and are consumed by `findociq-serve`.
 
 ```powershell
-ollama pull gemma3:4b
-uv sync --extra retrieval --extra dev
+docker compose --profile gpu up -d qdrant vllm
+uv sync --extra retrieval --extra dev --extra api --extra observability
 uv run findociq-reason "What was revenue in FY25?" `
   --retrieval-hits retrieval_hits.json `
   --pipeline-config configs/pipeline/two_pass.yaml
+```
+
+To launch a different tier in a native Linux vLLM environment:
+
+```powershell
+uv run findociq-serve --tier configs/model_tiers/laptop.yaml
+uv run findociq-serve --tier configs/model_tiers/ceiling.yaml
+```
+
+`VllmGemmaClient` is a concrete backend-selected client used by the CLI, API,
+and live eval composition roots. Its OpenAI-compatible request contract and
+the pinned vLLM launch command are tested, but full 12B GPU inference has not
+yet been live-run on this Windows/CPU workstation. The published live smoke
+results below used the explicitly configured Ollama 4B fallback.
+
+Ollama remains an explicit laptop fallback:
+
+```powershell
+ollama pull gemma3:4b
+uv run findociq-reason "What was revenue in FY25?" `
+  --retrieval-hits retrieval_hits.json `
+  --generation-config configs/reasoning/gemma_ollama.yaml
 ```
 
 The fixture evaluation compares both modes with `--reasoning-predictions`.
@@ -107,25 +149,43 @@ summary results.
 
 The pinned five-question English run in `evals/results/phase4_live/` produced:
 
-| Pipeline | Numeric exact | Citation F1 |
+| Pipeline | Numeric exact (n=5) | Citation F1 (n=5) |
 |---|---:|---:|
-| Single pass | 1.000 | 0.800 |
+| Single pass | 1.000 (n=5; expanding to 80) | 0.800 |
 | Two pass | 0.400 | 0.200 |
 
 Hybrid reranking improved retrieval Recall@1 from `0.600` to `0.800` and
-reached Recall@5 of `1.000`. Three two-pass cases are deliberately scored as
-failures because Gemma omitted required pass-1 fields; the associated errors
-are preserved in `reasoning_predictions.json` instead of being hidden or
-silently repaired.
+reached Recall@5 of `1.000` (`n=5`; expanding to `n=80`). Three two-pass cases
+in this historical run are scored as failures because Gemma omitted required
+pass-1 fields. Debugging showed these were schema-extraction failures, not an
+established model-quality ceiling: one response omitted the echoed question
+and two omitted citations. The current parser restores the caller's question
+and repairs a missing citation only when the figure value matches exactly one
+retrieved provenance; ambiguous or ungrounded output still fails closed. The
+table remains the original run and has not been rescored after that fix.
 
 ## Phase 5 observability
 
-Observability is local, typed, and disabled unless an observability YAML file
-is supplied. A trace records content-safe structural metadata for embedding,
-search, reranking, generation, reasoning passes, and citation validation. Raw
-questions, prompts, answers, and document text are never written; traces carry
-query hashes, configuration hashes, model revisions, counts, durations, and
-exception types.
+Observability is typed and fans every immutable structural span to local JSONL
+and, when enabled, the self-hosted Langfuse OTLP endpoint. Embedding, search,
+reranking, text generation, vision generation, reasoning passes, API requests,
+and citation validation are spanned. Raw questions, prompts, answers, images,
+and document text are never written; traces carry hashes, model revisions,
+counts, durations, and exception types.
+
+FinDocIQ reuses an existing self-hosted Langfuse instance instead of starting
+a second stack. Supply that project's keys to the process and keep its base URL
+in `configs/observability/langfuse.yaml`:
+
+```powershell
+$env:LANGFUSE_PUBLIC_KEY = "<project-public-key>"
+$env:LANGFUSE_SECRET_KEY = "<project-secret-key>"
+uv sync --extra observability
+```
+
+The exporter was integration-tested against the existing local Langfuse
+v3.174.1 deployment on port 3000: a structural span was ingested and read back
+with one observation and no trace input or output content.
 
 Enable tracing for the corpus-backed evaluation with:
 
@@ -142,12 +202,14 @@ latencies remain separate from Recall@k, answer accuracy, and citation scores.
 The no-op recorder is the default, and tests verify that enabling tracing does
 not change retrieval rankings or returned provenance.
 
-The current five-question smoke run produced 98 spans across 30 operational
-runs, with a `0.250` query-cache hit rate and `1.000` non-empty retrieval rate.
-Three failed runs correspond to the already-known two-pass schema validation
-failures. Retrieval and answer scores were unchanged from Phase 4. These local
-latencies and rates validate instrumentation behavior; they are not production
-performance benchmarks.
+The current `n=5` question smoke run (expanding to `n=80`) produced 98 spans
+across 30 operational runs, with a `0.250` query-cache hit rate and `1.000`
+non-empty retrieval rate (`n=5` questions, expanding to `n=80`; 20 retrieval
+calls). Three failed runs correspond
+to the historical two-pass schema validation failures described above.
+`retrieval.rerank` p50 was 105.5 seconds because the pinned reranker ran cold on
+CPU; this is a local smoke-run diagnostic, not GPU or production latency.
+Retrieval and answer scores were unchanged from Phase 4.
 
 ## Phase 6 cross-lingual evaluation
 
@@ -166,13 +228,14 @@ uv run python -m evals.run --sweep --live --live-reasoning `
   --validate-cross-lingual-pairs
 ```
 
-The pinned ten-question paired smoke run produced:
+The pinned paired smoke run used `n=5` facts per language and is expanding to
+`n=80` total questions. It produced:
 
-| Pipeline | Metric | English | Hindi | Hindi - English |
+| Pipeline | Metric | English (n=5) | Hindi (n=5) | Hindi - English |
 |---|---|---:|---:|---:|
 | Hybrid rerank | Recall@1 | 0.800 | 0.800 | +0.000 |
-| Hybrid rerank | Recall@5 | 1.000 | 1.000 | +0.000 |
-| Single pass | Numeric exact | 1.000 | 1.000 | +0.000 |
+| Hybrid rerank | Recall@5 | 1.000 (n=5; expanding to 80) | 1.000 (n=5; expanding to 80) | +0.000 |
+| Single pass | Numeric exact | 1.000 (n=5; expanding to 80) | 1.000 (n=5; expanding to 80) | +0.000 |
 | Single pass | Citation F1 | 0.800 | 0.800 | +0.000 |
 | Two pass | Numeric exact | 0.400 | 0.000 | -0.400 |
 | Two pass | Citation F1 | 0.200 | 0.000 | -0.200 |
@@ -183,6 +246,22 @@ queries failed pass-1 structured-output validation; the errors are retained in
 `reasoning_predictions.json` and are not repaired by tuning on this dataset.
 The paired set validates the cross-lingual measurement path but is too small to
 support a production benchmark claim.
+
+## FastAPI service
+
+The HTTP layer only validates requests and delegates to `FinDocIQService`;
+retrieval and reasoning logic stays in `src/findociq/`. The query response
+schema requires at least one `(document, page, bbox)` citation.
+
+```powershell
+uv sync --extra api --extra retrieval --extra observability
+uv run findociq-api --config configs/api/default.yaml
+Invoke-RestMethod http://127.0.0.1:8080/healthz
+```
+
+`POST /v1/query` accepts `question`, optional `question_id`, and optional
+`mode` (`single_pass` or `two_pass`). The configured two-pass mode is used when
+the request omits it.
 
 ## Provenance contract
 
@@ -199,11 +278,10 @@ attached to the table chunk.
 
 - The PyMuPDF fast path identifies tables through its rule-based table finder;
   borderless and visually complex tables may require Docling or vision.
-- The reproducible Phase 1 corpus uses 18 official-source PDFs. Fifteen ICRA
-  rationales were fully ingested; three annual reports correctly stop at the
-  local Gemma vision boundary. See `docs/phase1_corpus_audit.md`.
-- Vision extraction is an explicit interface in this phase. Production Gemma
-  serving and its pinned revision belong to the later reasoning/serving work.
+- The reproducible Phase 1 corpus uses 18 official-source PDFs. Its historical
+  checked-in audit predates the now-configured Gemma multimodal endpoint; rerun
+  the corpus audit before claiming those three annual reports as remediated.
+  See `docs/phase1_corpus_audit.md`.
 
 ## Known Phase 2 limitations
 

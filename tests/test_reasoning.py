@@ -8,10 +8,17 @@ from evals.schema import AnswerExpectation, CitationTarget, EvalCase
 from findociq.ingest.schema import BoundingBox, Provenance, TextChunk
 from findociq.observability.recorder import InMemoryRecorder, TraceObserver
 from findociq.observability.schema import TraceContext
-from findociq.reason.generation import GenerationConfig
+from findociq.reason.generation import (
+    GenerationConfig,
+    ModelTierConfig,
+    OllamaGemmaClient,
+    VllmGemmaClient,
+    build_generation_client,
+)
 from findociq.reason.pass1_extract import Pass1Extractor
 from findociq.reason.pipeline import ReasoningPipeline, ReasoningPipelineConfig
 from findociq.reason.schema import SourceCitation
+from findociq.reason.serve import vllm_command
 from findociq.retrieve.schema import RetrievalHit
 
 ROOT = Path(__file__).parents[1]
@@ -93,15 +100,52 @@ def answer_json() -> str:
 
 
 def test_generation_config_is_local_deterministic_and_yaml_backed() -> None:
-    config = GenerationConfig.from_yaml(ROOT / "configs/reasoning/gemma_local.yaml")
+    config = GenerationConfig.from_yaml(ROOT / "configs/reasoning/gemma_vllm.yaml")
+    assert config.backend == "vllm"
+    assert config.model_tier == "single_gpu"
+    assert config.model_id == "google/gemma-3-12b-it"
+    assert config.quantization == "awq-int4"
     assert config.temperature == 0.0
     assert config.seed == 17
+    fallback = GenerationConfig.from_yaml(ROOT / "configs/reasoning/gemma_ollama.yaml")
+    assert fallback.backend == "ollama"
+    assert fallback.model_id == "gemma3:4b"
     with pytest.raises(ValueError, match="local HTTP"):
         GenerationConfig(
             base_url="https://example.invalid/v1",
             model_id="google/gemma-3-12b-it",
             revision="rev",
         )
+
+
+def test_all_generation_tiers_are_pinned_awq_derivatives() -> None:
+    tiers = [
+        ModelTierConfig.from_yaml(ROOT / "configs/model_tiers" / f"{name}.yaml")
+        for name in ("laptop", "single_gpu", "ceiling")
+    ]
+    assert [tier.name for tier in tiers] == ["laptop", "single_gpu", "ceiling"]
+    assert [tier.source_model_id for tier in tiers] == [
+        "google/gemma-3-4b-it",
+        "google/gemma-3-12b-it",
+        "google/gemma-3-27b-it",
+    ]
+    assert all(tier.quantization == "awq-int4" for tier in tiers)
+    assert all(len(tier.revision) == 40 for tier in tiers)
+    command = vllm_command(tiers[1], executable="python")
+    assert command[:3] == ("python", "-m", "vllm.entrypoints.openai.api_server")
+    assert command[command.index("--quantization") + 1] == "awq"
+    assert command[command.index("--model") + 1] == tiers[1].model_id
+    assert command[command.index("--served-model-name") + 1] == tiers[1].source_model_id
+    assert command[command.index("--revision") + 1] == tiers[1].revision
+
+
+def test_generation_factory_selects_concrete_serving_client() -> None:
+    vllm = GenerationConfig.from_yaml(ROOT / "configs/reasoning/gemma_vllm.yaml")
+    ollama = GenerationConfig.from_yaml(ROOT / "configs/reasoning/gemma_ollama.yaml")
+    assert isinstance(build_generation_client(vllm), VllmGemmaClient)
+    assert isinstance(build_generation_client(ollama), OllamaGemmaClient)
+    with pytest.raises(ValueError, match="requires a vLLM"):
+        VllmGemmaClient(ollama)
 
 
 def test_two_pass_extracts_then_reasons_only_over_structured_json() -> None:
@@ -177,6 +221,32 @@ def test_pass1_accepts_fenced_json_and_rejects_ungrounded_citation() -> None:
     )
     with pytest.raises(ValueError, match="not present"):
         Pass1Extractor(FakeClient(bad)).extract("q", (retrieval_hit(),))
+
+
+def test_pass1_repairs_only_uniquely_grounded_schema_omissions() -> None:
+    omitted = json.dumps({"figures": [{"label": "Revenue", "value": "1,240", "unit": "INR crore"}]})
+    extraction = Pass1Extractor(FakeClient(omitted)).extract(
+        "What was revenue?", (retrieval_hit(),)
+    )
+    assert extraction.question == "What was revenue?"
+    assert extraction.figures[0].citation == citation()
+
+    duplicate = retrieval_hit().model_copy(
+        update={
+            "chunk": retrieval_hit().chunk.model_copy(
+                update={
+                    "chunk_id": "chunk-2",
+                    "provenance": (
+                        retrieval_hit().chunk.provenance[0].model_copy(update={"page_number": 3}),
+                    ),
+                }
+            )
+        }
+    )
+    with pytest.raises(ValueError, match="citation"):
+        Pass1Extractor(FakeClient(omitted)).extract(
+            "What was revenue?", (retrieval_hit(), duplicate)
+        )
 
 
 def test_pipeline_rejects_empty_evidence_before_model_call() -> None:

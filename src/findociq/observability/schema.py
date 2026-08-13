@@ -7,19 +7,42 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 AttributeValue = str | int | float | bool | None
+
+
+class LangfuseOtlpConfig(BaseModel):
+    """Connection metadata for a self-hosted Langfuse OTLP endpoint."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    enabled: bool = False
+    base_url: str = "http://localhost:3000"
+    public_key_env: str = "LANGFUSE_PUBLIC_KEY"
+    secret_key_env: str = "LANGFUSE_SECRET_KEY"
+    service_name: str = "findociq"
+    timeout_seconds: int = Field(default=10, gt=0)
+
+    @model_validator(mode="after")
+    def validate_self_hosted_url(self) -> LangfuseOtlpConfig:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(self.base_url)
+        if parsed.scheme != "http" or parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
+            raise ValueError("Langfuse must use a self-hosted local HTTP endpoint")
+        return self
 
 
 class ObservabilityConfig(BaseModel):
     """Config-driven local trace behavior."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     enabled: bool = False
     trace_path: Path = Path("evals/results/phase5_observability/traces.jsonl")
     capture_content: Literal[False] = False
+    langfuse: LangfuseOtlpConfig | None = None
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> ObservabilityConfig:
@@ -27,12 +50,6 @@ class ObservabilityConfig(BaseModel):
         payload = yaml.safe_load(source.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise ValueError(f"observability config must be a mapping: {source}")
-        expected = {"enabled", "trace_path", "capture_content"}
-        if set(payload) != expected:
-            raise ValueError(
-                f"invalid observability config keys; missing={sorted(expected - set(payload))}, "
-                f"extra={sorted(set(payload) - expected)}"
-            )
         return cls(**payload)
 
 

@@ -8,5 +8,40 @@ services:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
 
+  vllm:
+    profiles: ["gpu"]
+    image: vllm/vllm-openai:v0.27.1@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
+    ipc: host
+    ports:
+      - "8000:8000"
+    environment:
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
+    command:
+      - --model
+      - gaunernst/gemma-3-12b-it-int4-awq
+      - --revision
+      - 3b0c67b98eee8fb90633ef1bfbf3d39f43b9cf9d
+      - --served-model-name
+      - google/gemma-3-12b-it
+      - --quantization
+      - awq
+      - --max-model-len
+      - "8192"
+      - --gpu-memory-utilization
+      - "0.90"
+      - --limit-mm-per-prompt
+      - '{"image":1}'
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
 volumes:
   qdrant_data:
+  huggingface_cache:

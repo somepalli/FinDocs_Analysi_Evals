@@ -13,6 +13,7 @@ import json
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 
+import yaml
 from pydantic import TypeAdapter
 
 from evals.cross_lingual import (
@@ -41,7 +42,11 @@ from findociq.observability.recorder import (
     load_trace_events,
 )
 from findociq.observability.schema import ObservabilityConfig, TraceContext
-from findociq.reason.generation import GenerationClient, GenerationConfig, LocalGemmaClient
+from findociq.reason.generation import (
+    GenerationClient,
+    GenerationConfig,
+    build_generation_client,
+)
 from findociq.reason.pipeline import ReasoningPipeline, ReasoningPipelineConfig
 from findociq.retrieve.pipeline import (
     RetrievalPipeline,
@@ -210,7 +215,7 @@ def run_live_reasoning(
         )
         reasoning_hash = file_hash(
             pipeline_path,
-            generation_config_path,
+            *_generation_config_paths(generation_config_path),
             retrieval_config_path,
             index_config_path,
             *_reasoning_prompt_paths(mode),
@@ -452,9 +457,7 @@ def main() -> None:
     )
     observer = build_observer(observability_config, reset=True)
     strategy_paths = {name: args.config_dir / f"{name}.yaml" for name in STRATEGIES}
-    pipeline_factory = (
-        _default_pipeline_factory(args.index_config, observer) if args.live else None
-    )
+    pipeline_factory = _default_pipeline_factory(args.index_config, observer) if args.live else None
     result = run_sweep(
         cases,
         strategy_paths=strategy_paths,
@@ -478,7 +481,7 @@ def main() -> None:
                 retrieval_config,
             ),
             retrieval_strategy=args.reasoning_retrieval_strategy,
-            generation_client=LocalGemmaClient(generation_config, observer),
+            generation_client=build_generation_client(generation_config, observer),
             generation_config=generation_config,
             generation_config_path=args.generation_config,
             reasoning_config_dir=args.reasoning_config_dir,
@@ -520,7 +523,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--generation-config",
         type=Path,
-        default=Path("configs/reasoning/gemma_local.yaml"),
+        default=Path("configs/reasoning/gemma_vllm.yaml"),
     )
     parser.add_argument(
         "--reasoning-retrieval-strategy",
@@ -618,6 +621,17 @@ def _reasoning_prompt_paths(mode: str) -> tuple[Path, ...]:
     if mode == "two_pass":
         return (prompt_dir / "pass1_extract.txt", prompt_dir / "pass2_reason.txt")
     raise ValueError(f"unsupported reasoning mode: {mode}")
+
+
+def _generation_config_paths(path: str | Path) -> tuple[Path, ...]:
+    source = Path(path)
+    payload = yaml.safe_load(source.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"generation config must be a mapping: {source}")
+    tier_path = payload.get("tier_config")
+    if tier_path is None:
+        return (source,)
+    return (source, (source.parent / str(tier_path)).resolve())
 
 
 if __name__ == "__main__":

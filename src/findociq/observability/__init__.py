@@ -2,6 +2,7 @@
 
 from findociq.observability.aggregate import aggregate_traces, write_observability_report
 from findociq.observability.recorder import (
+    CompositeRecorder,
     InMemoryRecorder,
     JsonlRecorder,
     NoOpRecorder,
@@ -10,6 +11,7 @@ from findociq.observability.recorder import (
     load_trace_events,
 )
 from findociq.observability.schema import (
+    LangfuseOtlpConfig,
     ObservabilityConfig,
     ObservabilitySummary,
     SpanEvent,
@@ -19,8 +21,10 @@ from findociq.observability.schema import (
 
 __all__ = [
     "InMemoryRecorder",
+    "CompositeRecorder",
     "JsonlRecorder",
     "NoOpRecorder",
+    "LangfuseOtlpConfig",
     "ObservabilityConfig",
     "ObservabilitySummary",
     "SpanEvent",

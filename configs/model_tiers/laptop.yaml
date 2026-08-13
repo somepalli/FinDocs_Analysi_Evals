@@ -1,6 +1,9 @@
 name: laptop
-model_id: google/gemma-3-4b-it
-revision: 093f9f388b31de276ce2de164bdc2081324b9767
+source_model_id: google/gemma-3-4b-it
+model_id: gaunernst/gemma-3-4b-it-int4-awq
+revision: 8f28faf05c382a2dd81a471090acdb23156eb354
 quantization: awq-int4
 temperature: 0.0
 seed: 17
+max_model_length: 8192
+gpu_memory_utilization: 0.85

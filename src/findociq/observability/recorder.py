@@ -58,6 +58,19 @@ class InMemoryRecorder:
         self.events.append(event)
 
 
+class CompositeRecorder:
+    """Fan one immutable event out to each configured backend."""
+
+    def __init__(self, *recorders: TraceRecorder) -> None:
+        if not recorders:
+            raise ValueError("composite recorder requires at least one backend")
+        self.recorders = recorders
+
+    def record(self, event: SpanEvent) -> None:
+        for recorder in self.recorders:
+            recorder.record(event)
+
+
 class JsonlRecorder:
     """Append-only local JSONL recorder."""
 
@@ -127,10 +140,18 @@ class TraceObserver:
 
 
 def build_observer(config: ObservabilityConfig, *, reset: bool = False) -> TraceObserver:
-    """Construct the configured local observer."""
+    """Construct content-safe JSONL and optional Langfuse trace exporters."""
     if not config.enabled:
         return TraceObserver()
-    return TraceObserver(JsonlRecorder(config.trace_path, reset=reset))
+    recorders: list[TraceRecorder] = [JsonlRecorder(config.trace_path, reset=reset)]
+    if config.langfuse is not None and config.langfuse.enabled:
+        from findociq.observability.langfuse import LangfuseOtlpRecorder
+
+        recorders.append(LangfuseOtlpRecorder(config.langfuse))
+    recorder: TraceRecorder = (
+        recorders[0] if len(recorders) == 1 else CompositeRecorder(*recorders)
+    )
+    return TraceObserver(recorder)
 
 
 def load_trace_events(path: str | Path) -> tuple[SpanEvent, ...]:
