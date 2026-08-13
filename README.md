@@ -20,6 +20,20 @@ Every reported `1.000` below comes from an early `n=5` question/fact cohort;
 the evaluation is expanding to `n=80`. These runs validate the pipeline and
 measurement path, not production quality.
 
+### Published validation environment
+
+All Phase 4-6 live-smoke results in this README were produced on a Windows
+workstation using CPU execution. They are correctness and instrumentation
+checks, not GPU throughput or latency benchmarks.
+
+| Component | Environment used for published results |
+|---|---|
+| Generation | Ollama `gemma3:4b` on CPU |
+| Embeddings | BGE-M3 on CPU |
+| Reranking | bge-reranker-v2-m3 on CPU, including cold model startup |
+| Vector store | Qdrant in local Docker |
+| GPU/vLLM | Not exercised in the published runs |
+
 ## Production stack
 
 | Component | Default | Fallback / tiers |
@@ -117,8 +131,8 @@ uv run findociq-serve --tier configs/model_tiers/ceiling.yaml
 `VllmGemmaClient` is a concrete backend-selected client used by the CLI, API,
 and live eval composition roots. Its OpenAI-compatible request contract and
 the pinned vLLM launch command are tested, but full 12B GPU inference has not
-yet been live-run on this Windows/CPU workstation. The published live smoke
-results below used the explicitly configured Ollama 4B fallback.
+yet been live-run. The published live-smoke results used the CPU validation
+environment documented above and the explicitly configured Ollama 4B fallback.
 
 Ollama remains an explicit laptop fallback:
 
