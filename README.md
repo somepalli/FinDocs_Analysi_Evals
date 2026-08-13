@@ -32,7 +32,28 @@ checks, not GPU throughput or latency benchmarks.
 | Embeddings | BGE-M3 on CPU |
 | Reranking | bge-reranker-v2-m3 on CPU, including cold model startup |
 | Vector store | Qdrant in local Docker |
-| GPU/vLLM | Not exercised in the published runs |
+| GPU/vLLM | 4B AWQ serving smoke-tested separately; not used for the published runs |
+
+### Separate GPU serving smoke test
+
+On 2026-08-13, the pinned laptop tier was live-tested on an NVIDIA GeForce RTX
+4080 Laptop GPU (12 GB) through WSL2 Ubuntu, vLLM 0.27.1, and PyTorch
+2.13.0+cu130. The exact `gaunernst/gemma-3-4b-it-int4-awq` revision
+`8f28faf05c382a2dd81a471090acdb23156eb354` loaded with the AWQ Marlin kernel:
+4.39 GiB for the model and 4.64 GiB for the KV cache at an 8,192-token context.
+
+The `/v1/models` route exposed `google/gemma-3-4b-it`, and two
+temperature-0/seed-17 requests returned the same valid JSON response. The first
+request took 6.5 seconds while Triton kernels were compiled; the warm request
+took 1.8 seconds. The repository's concrete `VllmGemmaClient` was then exercised
+against the same endpoint and its response parsed as JSON successfully.
+
+These timings are a single-request serving smoke test, not a throughput
+benchmark. The published Phase 4-6 evaluations remain CPU runs, and neither the
+full evaluation cohort nor the default 12B tier has yet been run on this 12 GB
+laptop GPU. WSL2 required `VLLM_USE_V2_MODEL_RUNNER=0`,
+`VLLM_USE_FLASHINFER_SAMPLER=0`, and eager mode because the v2 runner expects
+UVA and the FlashInfer sampler expects a local CUDA toolkit.
 
 ## Production stack
 
@@ -129,10 +150,11 @@ uv run findociq-serve --tier configs/model_tiers/ceiling.yaml
 ```
 
 `VllmGemmaClient` is a concrete backend-selected client used by the CLI, API,
-and live eval composition roots. Its OpenAI-compatible request contract and
-the pinned vLLM launch command are tested, but full 12B GPU inference has not
-yet been live-run. The published live-smoke results used the CPU validation
-environment documented above and the explicitly configured Ollama 4B fallback.
+and live eval composition roots. Its OpenAI-compatible request contract, the
+pinned vLLM launch path, and live 4B AWQ GPU generation are tested. Full 12B GPU
+inference has not yet been live-run. The published live-smoke results used the
+CPU validation environment documented above and the explicitly configured
+Ollama 4B fallback.
 
 Ollama remains an explicit laptop fallback:
 
