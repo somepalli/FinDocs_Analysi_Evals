@@ -83,6 +83,27 @@ Markdown output renders English and Hindi rows plus Hindi-minus-English gaps.
 Overall, per-language, retrieval, answer, and citation metrics remain distinct;
 the cross-lingual report does not blend these score families.
 
+## Dataset readiness guard
+
+Corpus-backed datasets must pass `scripts/validate_dataset.py` before scoring.
+The guard rejects every literal `VERIFY` placeholder, requires `direction` for
+each `numeric_multi` answer, and requires every `relevant_chunk_id` to resolve
+against either the ingested chunk JSONL files or the reviewed CI manifest.
+
+Run the stronger local check against the complete ingestion with:
+
+```powershell
+uv run python scripts/validate_dataset.py `
+  --dataset evals/datasets/phase4_corpus.jsonl `
+  --dataset evals/datasets/phase6_cross_lingual.jsonl `
+  --corpus corpus/phase1_chunks
+```
+
+CI uses `phase1_benchmark_chunk_manifest.json` because the complete corpus is
+intentionally gitignored. That manifest contains only anchors already checked
+against the 1,236-chunk Phase 1 ingestion; adding a new benchmark question
+requires resolving its chunk locally and reviewing the manifest update.
+
 ## Operational observability
 
 Passing `--observability-config configs/observability/local.yaml` enables the
