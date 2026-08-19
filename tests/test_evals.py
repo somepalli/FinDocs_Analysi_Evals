@@ -43,7 +43,7 @@ def test_eval_schema_and_fixture_records_load() -> None:
 
 def test_phase4_dataset_is_corpus_backed_with_bbox_targets() -> None:
     cases = load_cases(ROOT / "evals/datasets/phase4_corpus.jsonl")
-    assert len(cases) == 11
+    assert len(cases) == 8
     assert all(case.expected_answer is not None for case in cases)
     assert all(case.expected_citations[0].bbox is not None for case in cases)
 
@@ -51,6 +51,16 @@ def test_phase4_dataset_is_corpus_backed_with_bbox_targets() -> None:
 def test_phase7_dataset_loads_all_verified_cases() -> None:
     cases = load_cases(ROOT / "evals/datasets/phase7_corpus.jsonl")
     assert len(cases) == 31
+    assert all(case.expected_answer is not None for case in cases)
+    assert all(case.expected_citations for case in cases)
+
+
+def test_phase7_annual_report_datasets_load_verified_cases() -> None:
+    paths = sorted((ROOT / "evals/datasets").glob("phase7_annual_reports_*.jsonl"))
+    cases = tuple(case for path in paths for case in load_cases(path))
+    assert len(paths) == 4
+    assert len(cases) == 14
+    assert len({case.question_id for case in cases}) == 14
     assert all(case.expected_answer is not None for case in cases)
     assert all(case.expected_citations for case in cases)
 

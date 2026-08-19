@@ -1,0 +1,23 @@
+router:
+  min_digital_characters: 0
+  strong_digital_characters: 0
+  scanned_image_coverage: 1.0
+  hybrid_image_coverage: 1.0
+parser:
+  prefer_docling: false
+  fail_on_vision_required: false
+vision:
+  enabled: false
+  backend: vllm
+  base_url: http://localhost:8900/v1
+  model_id: google/gemma-3-12b-it
+  revision: 3b0c67b98eee8fb90633ef1bfbf3d39f43b9cf9d
+  temperature: 0.0
+  seed: 17
+  max_tokens: 4096
+  timeout_seconds: 180
+  render_dpi: 144
+chunker:
+  max_text_characters: 1800
+  overlap_characters: 180
+observability_config: ../observability/phase7_annual_reports.yaml

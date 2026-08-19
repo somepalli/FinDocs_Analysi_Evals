@@ -1,0 +1,32 @@
+{
+  "documents": [
+    {
+      "bytes": 18560418,
+      "filename": "sbi-card-integrated-annual-report-2025.pdf",
+      "id": "sbi-card-integrated-annual-report-2025",
+      "kind": "annual_report",
+      "sha256": "7be55da45e285e5c2927138cf212ba4a39f5e0fb4de80d7a12dee1a5c333bca5",
+      "source": "SBI Card",
+      "url": "https://www.sbicard.com/sbi-card-en/assets/docs/pdf/who-we-are/notices/Integrated-annual-report-fy-2024-25.pdf"
+    },
+    {
+      "bytes": 12917481,
+      "filename": "jm-financial-annual-report-2025.pdf",
+      "id": "jm-financial-annual-report-2025",
+      "kind": "annual_report",
+      "sha256": "1f31ad538ecefe549f117ae47fff43cf6966b8d09f14501dc39afecb63ad7ef3",
+      "source": "JM Financial",
+      "url": "https://jmfl.com/Common/getFile/5121"
+    },
+    {
+      "bytes": 9305944,
+      "filename": "likhitha-infrastructure-annual-report-2025.pdf",
+      "id": "likhitha-infrastructure-annual-report-2025",
+      "kind": "annual_report",
+      "sha256": "f5dfcfc0104db312291e0be31127679d984144f04e3622fb5b53de174a64bc6a",
+      "source": "Likhitha Infrastructure",
+      "url": "https://www.likhitha.co.in/assets/pdf/Annual_Report_2024-25.pdf"
+    }
+  ],
+  "name": "findociq-phase7-annual-reports"
+}

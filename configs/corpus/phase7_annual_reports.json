@@ -1,0 +1,23 @@
+{
+  "name": "findociq-phase7-annual-reports",
+  "documents": [
+    {
+      "id": "sbi-card-integrated-annual-report-2025",
+      "kind": "annual_report",
+      "source": "SBI Card",
+      "url": "https://www.sbicard.com/sbi-card-en/assets/docs/pdf/who-we-are/notices/Integrated-annual-report-fy-2024-25.pdf"
+    },
+    {
+      "id": "jm-financial-annual-report-2025",
+      "kind": "annual_report",
+      "source": "JM Financial",
+      "url": "https://jmfl.com/Common/getFile/5121"
+    },
+    {
+      "id": "likhitha-infrastructure-annual-report-2025",
+      "kind": "annual_report",
+      "source": "Likhitha Infrastructure",
+      "url": "https://www.likhitha.co.in/assets/pdf/Annual_Report_2024-25.pdf"
+    }
+  ]
+}

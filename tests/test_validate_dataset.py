@@ -69,3 +69,10 @@ def test_validator_applies_typed_answer_contract(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="numeric answer requires tolerance"):
         validate_datasets((dataset,), frozenset({"chunk-1"}))
+
+
+def test_validator_rejects_question_id_reused_across_datasets(tmp_path: Path) -> None:
+    first = _write_jsonl(tmp_path / "phase4.jsonl", _case())
+    second = _write_jsonl(tmp_path / "phase7.jsonl", _case())
+    with pytest.raises(ValueError, match="duplicate question_id"):
+        validate_datasets((first, second), frozenset({"chunk-1"}))

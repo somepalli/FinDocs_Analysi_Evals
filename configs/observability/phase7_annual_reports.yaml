@@ -1,0 +1,3 @@
+enabled: false
+trace_path: .artifacts/observability/phase7_annual_reports.jsonl
+capture_content: false

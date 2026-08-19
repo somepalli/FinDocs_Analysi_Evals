@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "source": "corpus/phase7_annual_report_chunks",
+  "ingested_chunk_count": 20754,
+  "description": "Reviewed annual-report anchors confirmed against the local digital fast-path ingestion and rendered source pages.",
+  "chunk_ids": [
+    "4a044e1f8250018dc0114ef52251b264edc0c43131b2e7be95224841cf6245f9",
+    "75bbc569cddea22a19406251dad6b718c903ffd5df62dd3d032eaaa797fbfc7d",
+    "a61de8df524b1c3bcf07179c48f0a452d54963ec3223a1eadf11e9e0c06cd803",
+    "b6d61ecda6a1eafb93e9528a6c4ffd0aac7ee2be23c643f985ea145f7865fe50",
+    "d0117484b09af94f8eeaa6037cd9f4e958dd759caa1d198d73dc468975f3d5b0",
+    "ee8344033acb496bab6fe568476d81f5dad73ed2f7c83d232aa30e8f180614ac"
+  ]
+}
