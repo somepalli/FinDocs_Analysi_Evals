@@ -314,7 +314,7 @@ single-corpus benchmark.
 | Strategy | Backend | Questions | Recall@1 | Recall@5 | Recall@8 | MRR | nDCG@8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Naive dense | live GPU | 31 | 0.290 | 0.548 | 0.661 | 0.455 | 0.489 |
-| Hybrid RRF | live GPU | 31 | 0.210 | 0.613 | 0.726 | 0.397 | 0.466 |
+| Hybrid RRF | live GPU | 31 | 0.242 | 0.613 | 0.726 | 0.413 | 0.478 |
 | Hybrid RRF + BGE rerank | live GPU | 31 | 0.403 | 0.806 | 0.871 | 0.609 | 0.671 |
 
 The complete machine-readable and rendered outputs are checked in under

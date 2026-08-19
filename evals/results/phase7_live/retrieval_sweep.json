@@ -3,7 +3,7 @@
   "results": [
     {
       "strategy": "naive",
-      "config_hash": "32038fce3a56b5aeb8478cb30afbfc3520aae3d07a7cd111a58dca837e92107f",
+      "config_hash": "9f84e3ff57cb73e3aaacd4be664d56f662f6a178a1a7d1ce981fcf8d4121989a",
       "backend": "live",
       "retrieval": {
         "query_count": 31,
@@ -31,15 +31,15 @@
     },
     {
       "strategy": "hybrid",
-      "config_hash": "700f8a4314feed6e002cb09c59c023042ba7534d836ddf52d3ea31d34c8bfbf0",
+      "config_hash": "36a3021afc0866b8da90894df94600c15e7d7671b4add890b8f71e9f27dac0ee",
       "backend": "live",
       "retrieval": {
         "query_count": 31,
-        "recall_at_1": 0.20967741935483872,
+        "recall_at_1": 0.24193548387096775,
         "recall_at_5": 0.6129032258064516,
         "recall_at_8": 0.7258064516129032,
-        "mrr": 0.39711981566820276,
-        "ndcg_at_8": 0.4664128527389763
+        "mrr": 0.41324884792626726,
+        "ndcg_at_8": 0.4783183445592519
       },
       "answer": null,
       "retrieval_by_language": [
@@ -47,11 +47,11 @@
           "language": "en",
           "retrieval": {
             "query_count": 31,
-            "recall_at_1": 0.20967741935483872,
+            "recall_at_1": 0.24193548387096775,
             "recall_at_5": 0.6129032258064516,
             "recall_at_8": 0.7258064516129032,
-            "mrr": 0.39711981566820276,
-            "ndcg_at_8": 0.4664128527389763
+            "mrr": 0.41324884792626726,
+            "ndcg_at_8": 0.4783183445592519
           }
         }
       ],
@@ -59,7 +59,7 @@
     },
     {
       "strategy": "hybrid_rerank",
-      "config_hash": "ae26097a530cb77127b8dcf0bc6579f8e5839d23b1b2cb5bb40cb71f829d3b7f",
+      "config_hash": "8f6ef385b0a3d6a7ed3e950eacd9f4daa31c870c801d699ab18b5d7e6a1f6671",
       "backend": "live",
       "retrieval": {
         "query_count": 31,
