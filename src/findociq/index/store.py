@@ -18,7 +18,7 @@ CHUNK_ADAPTER = TypeAdapter(Chunk)
 
 @dataclass(frozen=True, slots=True)
 class QdrantStoreConfig:
-    url: str = "http://localhost:6333"
+    url: str = "http://localhost:6999"
     collection: str = "findociq_chunks"
     dense_vector_name: str = "dense"
     sparse_vector_name: str = "sparse"

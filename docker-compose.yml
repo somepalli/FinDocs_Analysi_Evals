@@ -2,8 +2,8 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.18.0
     ports:
-      - "6333:6333"
-      - "6334:6334"
+      - "6999:6333"
+      - "7000:6334"
     volumes:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
@@ -13,9 +13,10 @@ services:
     image: vllm/vllm-openai:v0.27.1@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
     ipc: host
     ports:
-      - "8000:8000"
+      - "8900:8000"
     environment:
       HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+      VLLM_USE_V2_MODEL_RUNNER: "0"
     volumes:
       - huggingface_cache:/root/.cache/huggingface
     command:
@@ -28,9 +29,14 @@ services:
       - --quantization
       - awq
       - --max-model-len
-      - "8192"
+      - "2048"
       - --gpu-memory-utilization
-      - "0.90"
+      - "0.88"
+      - --max-num-seqs
+      - "1"
+      - --enforce-eager
+      - --mm-processor-cache-gb
+      - "0"
       - --limit-mm-per-prompt
       - '{"image":1}'
     deploy:
@@ -40,6 +46,31 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    restart: unless-stopped
+
+  api:
+    profiles: ["gpu"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8989:8989"
+    environment:
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+    volumes:
+      - ./.artifacts/models:/app/.artifacts/models:ro
+      - ./.artifacts/observability:/app/.artifacts/observability
+    command:
+      - findociq-api
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8989"
+      - --config
+      - configs/api/docker.yaml
+    depends_on:
+      - qdrant
     restart: unless-stopped
 
 volumes:

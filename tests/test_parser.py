@@ -57,7 +57,7 @@ def test_gemma_vision_returns_grounded_pdf_blocks() -> None:
 
     extractor = OpenAICompatibleGemmaVisionExtractor(
         VisionConfig(
-            base_url="http://localhost:8000/v1",
+            base_url="http://localhost:8900/v1",
             model_id="gemma-vision",
             revision="pinned",
         ),
@@ -100,7 +100,7 @@ def test_failed_fast_path_table_extraction_routes_to_gemma_vision(
 
     extractor = OpenAICompatibleGemmaVisionExtractor(
         VisionConfig(
-            base_url="http://localhost:8000/v1",
+            base_url="http://localhost:8900/v1",
             model_id="gemma-vision",
             revision="pinned",
         ),

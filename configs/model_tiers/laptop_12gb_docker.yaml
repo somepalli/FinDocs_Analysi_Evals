@@ -1,0 +1,10 @@
+name: laptop_12gb_docker
+source_model_id: google/gemma-3-12b-it
+model_id: gaunernst/gemma-3-12b-it-int4-awq
+revision: 3b0c67b98eee8fb90633ef1bfbf3d39f43b9cf9d
+quantization: awq-int4
+temperature: 0.0
+seed: 17
+max_model_length: 2048
+gpu_memory_utilization: 0.88
+

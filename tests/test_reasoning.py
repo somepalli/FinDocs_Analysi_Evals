@@ -266,7 +266,7 @@ def test_live_reasoning_scores_both_modes_and_records_model_revision() -> None:
             return (retrieval_hit(),)
 
     config = GenerationConfig(
-        base_url="http://localhost:8000/v1",
+        base_url="http://localhost:8900/v1",
         model_id="google/gemma-3-4b-it",
         revision="pinned-revision",
     )

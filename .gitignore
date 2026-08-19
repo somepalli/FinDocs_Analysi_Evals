@@ -13,5 +13,6 @@ corpus/*
 spot-checks/
 .env
 .artifacts/
-.uv-cache/
+.uv-cache*/
+.pytest-tmp*/
 AGENTS.md

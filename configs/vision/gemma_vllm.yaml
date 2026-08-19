@@ -1,6 +1,6 @@
 enabled: true
 backend: vllm
-base_url: http://localhost:8000/v1
+base_url: http://localhost:8900/v1
 model_id: google/gemma-3-12b-it
 revision: 3b0c67b98eee8fb90633ef1bfbf3d39f43b9cf9d
 temperature: 0.0

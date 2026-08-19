@@ -12,8 +12,9 @@ reranker:
   snapshot_dir: .artifacts/models/bge-reranker-v2-m3-953dc6f
   use_fp16: true
 store:
-  url: http://localhost:6999
+  url: http://qdrant:6333
   collection: findociq_chunks
   dense_vector_name: dense
   sparse_vector_name: sparse
   timeout_seconds: 60
+

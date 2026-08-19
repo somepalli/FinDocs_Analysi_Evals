@@ -139,7 +139,7 @@ tiers are in `configs/model_tiers/`; all three use pinned AWQ int4 artifacts,
 temperature 0, fixed seeds, and are consumed by `findociq-serve`.
 
 ```powershell
-docker compose --profile gpu up -d qdrant vllm
+docker compose --profile gpu up -d --build qdrant vllm api
 uv sync --extra retrieval --extra dev --extra api --extra observability
 uv run findociq-reason "What was revenue in FY25?" `
   --retrieval-hits retrieval_hits.json `
@@ -321,6 +321,34 @@ The complete machine-readable and rendered outputs are checked in under
 `evals/results/phase7_live/`; the dataset SHA-256 is
 `f1356732204197249c9ded434e93eb74b05ba23a9723e5f24ea7feb573d36882`.
 
+### Phase 7 annual-report extension
+
+Four `phase7_annual_reports_*.jsonl` files add 14 visually verified questions
+from the official SBI Card, JM Financial, and Likhitha Infrastructure FY2025
+annual reports, including one cross-document PAT comparison. Each row resolves
+to a reviewed answer-bearing chunk with exact `(document, page, bbox)`
+provenance. The source PDFs are hash-locked in
+`configs/corpus/phase7_annual_reports.lock.json`; the full local ingestion is
+gitignored, while CI validates the reviewed six-anchor manifest.
+The source-page review and exclusions are recorded in
+`evals/datasets/PHASE7_ANNUAL_REPORT_AUDIT.md`.
+
+The annual-report extension uses the searchable digital-page fast path because
+the configured Gemma vision port was unavailable during this run. It therefore
+does not claim complete remediation of every visual page in the three reports.
+Two provisional negative questions were excluded: SBI Card actually discloses
+an interim dividend of Rs. 2.50 per share, and absence of a Likhitha order-book
+value cannot be established from a partial visual ingestion.
+
+```powershell
+uv run python scripts/validate_dataset.py `
+  --dataset evals/datasets/phase7_annual_reports_sbicard.jsonl `
+  --dataset evals/datasets/phase7_annual_reports_jm_financial.jsonl `
+  --dataset evals/datasets/phase7_annual_reports_likhitha.jsonl `
+  --dataset evals/datasets/phase7_annual_reports_cross_document.jsonl `
+  --corpus corpus/phase7_annual_report_chunks
+```
+
 ## FastAPI service
 
 The HTTP layer only validates requests and delegates to `FinDocIQService`;
@@ -330,12 +358,28 @@ schema requires at least one `(document, page, bbox)` citation.
 ```powershell
 uv sync --extra api --extra retrieval --extra observability
 uv run findociq-api --config configs/api/default.yaml
-Invoke-RestMethod http://127.0.0.1:8080/healthz
+Invoke-RestMethod http://127.0.0.1:8989/healthz
 ```
+
+For the conflict-free Docker stack, host ports are FinDocIQ API `8989`, vLLM
+`8900`, Qdrant REST `6999`, and Qdrant gRPC `7000`. Container-to-container
+traffic retains the images' standard internal ports. The 12 GB laptop Docker
+profile uses single-request vLLM concurrency, eager execution, the V1 model
+runner for Docker Desktop/WSL compatibility, and a measured 2K context window.
+It serves the pinned 12B AWQ model; the 8K `single_gpu` tier requires more VRAM
+because this GPU has only about 0.5 GiB left for KV cache after loading the
+multimodal weights.
 
 `POST /v1/query` accepts `question`, optional `question_id`, and optional
 `mode` (`single_pass` or `two_pass`). The configured two-pass mode is used when
 the request omits it.
+
+`POST /extract` is the versioned black-box integration boundary for downstream
+applications such as FunderMatch. It accepts `question` and optional
+`question_id`, always runs the two-pass path, and returns contract version `1.0`
+with structured figures and a `(document_id, page_number, bbox)` citation on
+every figure. Downstream repositories must copy this public response schema and
+call it over HTTP; they must not import `findociq` internals.
 
 ## Provenance contract
 
