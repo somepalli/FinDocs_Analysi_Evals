@@ -6,7 +6,13 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 
-from findociq.api.schema import HealthResponse, QueryRequest, QueryResponse
+from findociq.api.schema import (
+    ExtractRequest,
+    ExtractResponse,
+    HealthResponse,
+    QueryRequest,
+    QueryResponse,
+)
 from findociq.service import ApiConfig, FinDocIQService, build_service
 
 
@@ -52,6 +58,29 @@ def create_app(
             citations=result.answer.citations,
         )
 
+    @app.post("/extract", response_model=ExtractResponse)
+    def extract(
+        payload: ExtractRequest,
+        query_service: Annotated[FinDocIQService, Depends(get_service)],
+    ) -> ExtractResponse:
+        try:
+            result = query_service.query(
+                payload.question,
+                mode="two_pass",
+                question_id=payload.question_id,
+            )
+        except (RuntimeError, OSError) as error:
+            raise HTTPException(
+                status_code=503, detail="local inference pipeline unavailable"
+            ) from error
+        if result.extraction is None or not result.extraction.figures:
+            raise HTTPException(status_code=502, detail="structured extraction unavailable")
+        return ExtractResponse(
+            question=result.extraction.question,
+            figures=result.extraction.figures,
+            notes=result.extraction.notes,
+        )
+
     return app
 
 
@@ -61,7 +90,7 @@ app = create_app()
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--port", type=int, default=8989)
     parser.add_argument("--config", type=Path, default=Path("configs/api/default.yaml"))
     args = parser.parse_args()
     try:

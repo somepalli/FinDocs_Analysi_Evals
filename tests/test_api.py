@@ -4,7 +4,13 @@ from fastapi.testclient import TestClient
 
 from findociq.api.app import create_app
 from findociq.ingest.schema import BoundingBox
-from findociq.reason.schema import ReasonedAnswer, ReasoningRun, SourceCitation
+from findociq.reason.schema import (
+    ExtractedFigure,
+    Pass1Extraction,
+    ReasonedAnswer,
+    ReasoningRun,
+    SourceCitation,
+)
 from findociq.service import ApiConfig
 
 ROOT = Path(__file__).parents[1]
@@ -21,19 +27,36 @@ class FakeQueryService:
         self.calls.append((question, mode, question_id))
         if self.fail:
             raise RuntimeError("secret backend detail")
+        source = SourceCitation(
+            document_id="doc-1",
+            page_number=2,
+            bbox=BoundingBox(x0=1, y0=2, x1=3, y1=4),
+        )
+        extraction = (
+            Pass1Extraction(
+                question=question,
+                figures=(
+                    ExtractedFigure(
+                        label="Revenue",
+                        value="10",
+                        unit="INR crore",
+                        period="FY2025",
+                        citation=source,
+                    ),
+                ),
+                notes=("Consolidated revenue",),
+            )
+            if mode == "two_pass"
+            else None
+        )
         return ReasoningRun(
             mode=mode,
             question=question,
             answer=ReasonedAnswer(
                 answer="Revenue was Rs. 10 crore.",
-                citations=(
-                    SourceCitation(
-                        document_id="doc-1",
-                        page_number=2,
-                        bbox=BoundingBox(x0=1, y0=2, x1=3, y1=4),
-                    ),
-                ),
+                citations=(source,),
             ),
+            extraction=extraction,
         )
 
 
@@ -71,3 +94,45 @@ def test_fastapi_does_not_leak_backend_error_details() -> None:
     assert response.status_code == 503
     assert response.json() == {"detail": "local inference pipeline unavailable"}
     assert "secret backend detail" not in response.text
+
+
+def test_extract_returns_versioned_figures_with_mandatory_provenance() -> None:
+    service = FakeQueryService()
+    client = TestClient(create_app(service=service))  # type: ignore[arg-type]
+
+    response = client.post(
+        "/extract",
+        json={"question": "Extract FY2025 revenue", "question_id": "case-1"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "contract_version": "1.0",
+        "question": "Extract FY2025 revenue",
+        "figures": [
+            {
+                "label": "Revenue",
+                "value": "10",
+                "unit": "INR crore",
+                "period": "FY2025",
+                "citation": {
+                    "document_id": "doc-1",
+                    "page_number": 2,
+                    "bbox": {"x0": 1.0, "y0": 2.0, "x1": 3.0, "y1": 4.0},
+                },
+            }
+        ],
+        "notes": ["Consolidated revenue"],
+    }
+    assert service.calls == [("Extract FY2025 revenue", "two_pass", "case-1")]
+
+
+def test_extract_rejects_unknown_request_fields() -> None:
+    client = TestClient(create_app(service=FakeQueryService()))  # type: ignore[arg-type]
+
+    response = client.post(
+        "/extract",
+        json={"question": "Extract revenue", "document_path": "private.pdf"},
+    )
+
+    assert response.status_code == 422
